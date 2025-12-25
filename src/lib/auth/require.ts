@@ -1,33 +1,24 @@
-import { NextResponse } from "next/server";
+// src/lib/auth/require.ts
 import { Role } from "@prisma/client";
-import { getSession } from "@/lib/auth/session";
+import { getSession } from "./session";
 
-export type GuardOk = {
-  ok: true;
-  user: { id: number; email: string; role: Role };
+// Adjust this if your session.ts exports SessionUser type
+type SessionUser = {
+  id: number;
+  email: string;
+  role: Role;
 };
 
-export type GuardFail = {
-  ok: false;
-  response: NextResponse;
-};
+export type GuardOk = { ok: true; user: SessionUser };
+export type GuardFail = { ok: false; status: number; error: string };
+export type GuardResult = GuardOk | GuardFail;
 
-export async function requireRole(allowed: Role[]): Promise<GuardOk | GuardFail> {
-  const user = await getSession();
+export async function requireRole(roles: Role[]): Promise<GuardResult> {
+  const session = await getSession();
+  const user = (session as any)?.user as SessionUser | undefined;
 
-  if (!user) {
-    return {
-      ok: false,
-      response: NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  if (!allowed.includes(user.role)) {
-    return {
-      ok: false,
-      response: NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 }),
-    };
-  }
+  if (!user) return { ok: false, status: 401, error: "Unauthorized" };
+  if (!roles.includes(user.role)) return { ok: false, status: 403, error: "Forbidden" };
 
   return { ok: true, user };
 }
