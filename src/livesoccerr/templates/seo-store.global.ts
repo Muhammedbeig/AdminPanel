@@ -108,4 +108,4 @@ export const LSOCCERR_GLOBAL_TEMPLATE = {
   overrides: {},
 } as const;
 
-export type LivesoccerrGlobal = typeof LSOCCERR_GLOBAL_TEMPLATE;
+export default LSOCCERR_GLOBAL_TEMPLATE;

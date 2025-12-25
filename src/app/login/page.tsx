@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
-  const params = useSearchParams();
-  const nextUrl = useMemo(() => params.get("next") || "/", [params]);
+
+  const [nextUrl, setNextUrl] = useState("/");
+  const [nextReady, setNextReady] = useState(false);
+
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    setNextUrl(u.searchParams.get("next") || "/");
+    setNextReady(true);
+  }, []);
 
   const BYPASS = process.env.NEXT_PUBLIC_ADMIN_BYPASS_AUTH === "true";
   const { user, loading, signInEmail } = useAdminAuth();
@@ -18,18 +25,21 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!nextReady) return;
     if (!loading && user) router.replace(nextUrl);
-  }, [loading, user, router, nextUrl]);
+  }, [nextReady, loading, user, router, nextUrl]);
 
   useEffect(() => {
+    if (!nextReady) return;
     if (BYPASS) router.replace(nextUrl);
-  }, [BYPASS, router, nextUrl]);
+  }, [nextReady, BYPASS, router, nextUrl]);
 
   const onEmailLogin = async () => {
     setErr(null);
     setBusy(true);
     try {
-      await signInEmail(email, password);
+      const res = await signInEmail(email, password);
+      if (!res?.ok) throw new Error(res?.error || "Login failed");
       router.replace(nextUrl);
     } catch (e: any) {
       setErr(e?.message || "Login failed");

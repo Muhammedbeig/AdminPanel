@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAdminAuth } from "./AdminAuthProvider";
 
@@ -19,7 +19,6 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
   const pathnameRaw = usePathname();
   const pathname = normalizePath(pathnameRaw);
 
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   const isAuthPage = pathname === "/login" || pathname === "/admin/login";
@@ -30,12 +29,14 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
     if (loading) return;
     if (user) return;
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("next");
+    // ✅ No useSearchParams() (avoids build-time Suspense requirement)
+    const url = new URL(window.location.href);
+    url.searchParams.delete("next");
+    const qs = url.searchParams.toString();
 
-    const current = `${pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+    const current = `${pathname}${qs ? `?${qs}` : ""}`;
     router.replace(`${loginPath}?next=${encodeURIComponent(current)}`);
-  }, [isAuthPage, loading, user, pathname, searchParams, router, loginPath]);
+  }, [isAuthPage, loading, user, pathname, router, loginPath]);
 
   if (isAuthPage) return <>{children}</>;
 
