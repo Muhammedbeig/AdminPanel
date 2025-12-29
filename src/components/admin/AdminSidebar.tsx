@@ -11,6 +11,7 @@ import {
   Users,
   Shield,
   Settings,
+  FileText, // ✅ New Icon for Pages
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 
@@ -102,6 +103,12 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
     { href: "/seo/league", label: "League", icon: <Shield size={16} />},
   ];
 
+const pages: NavItem[] = [
+    { href: "/seo/pages/terms", label: "Terms of Service", icon: <FileText size={16} /> },
+    { href: "/seo/pages/privacy", label: "Privacy Policy", icon: <FileText size={16} /> },
+    { href: "/seo/pages/contact", label: "Contact", icon: <FileText size={16} /> }, // ✅ Added
+  ];
+
   const admin: NavItem[] = [
     { href: "/settings/members", label: "Members", icon: <Users size={16} /> },
     { href: "/settings", label: "Settings", icon: <Settings size={16} /> },
@@ -112,6 +119,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
       <nav className="p-4 space-y-6">
         <Section title="Main" items={main} />
         <Section title="SEO Manager" items={seoManager} />
+        <Section title="Content Pages" items={pages} /> {/* ✅ Added this */}
         <Section title="Admin" items={admin} />
       </nav>
     </aside>
