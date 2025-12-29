@@ -30,3 +30,23 @@ model SeoGlobal {
   data      Json
   updatedAt DateTime @updatedAt
 }
+
+model SeoMatch {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+model SeoLeague {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model SeoPlayer {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+}

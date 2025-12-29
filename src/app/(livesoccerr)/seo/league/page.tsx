@@ -1,8 +1,24 @@
+import { Suspense } from "react";
+import LeagueSeoClient from "./LeagueSeoClient";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+function Loading() {
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-10">
+      <div className="theme-bg theme-border border rounded-2xl p-6">
+        <div className="text-xl font-black text-primary">League SEO</div>
+        <div className="text-sm text-secondary mt-2">Loading...</div>
+      </div>
+    </div>
+  );
+}
+
 export default function LeagueSeoPage() {
   return (
-    <div className="theme-bg theme-border border rounded-xl p-6">
-      <div className="text-xl font-black text-primary">SEO Manager → League</div>
-      <div className="text-sm text-secondary mt-2">Coming soon.</div>
-    </div>
+    <Suspense fallback={<Loading />}>
+      <LeagueSeoClient />
+    </Suspense>
   );
 }

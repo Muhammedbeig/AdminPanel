@@ -95,12 +95,11 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
     { href: "/", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
   ];
 
-  // ✅ No "livesoccerr" in URL anymore
   const seoManager: NavItem[] = [
     { href: "/seo/global", label: "Global", icon: <Globe size={16} /> },
-    { href: "/seo/match", label: "Match", icon: <Trophy size={16} />, badge: "Soon" },
-    { href: "/seo/player", label: "Player", icon: <User size={16} />, badge: "Soon" },
-    { href: "/seo/league", label: "League", icon: <Shield size={16} />, badge: "Soon" },
+    { href: "/seo/match", label: "Match", icon: <Trophy size={16} />},
+    { href: "/seo/player", label: "Player", icon: <User size={16} />},
+    { href: "/seo/league", label: "League", icon: <Shield size={16} />},
   ];
 
   const admin: NavItem[] = [
