@@ -2,53 +2,55 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireRole } from "@/lib/auth/guard";
 import { Role } from "@prisma/client";
-import { hashPassword } from "@/lib/auth/password";
 
-export const runtime = "nodejs";
+// ✅ Use the Enum from your schema
+const ALLOWED_ROLES = [Role.ADMIN, Role.DEVELOPER];
 
 export async function GET() {
-  const g = await requireRole([Role.ADMIN]);
-  if (!g.ok) return g.response;
+  const auth = await requireRole(ALLOWED_ROLES);
+  if (!auth.ok) return auth.response;
 
-  const users = await prisma.user.findMany({
+  // ✅ Use 'prisma.user' (matching your schema)
+  const members = await prisma.user.findMany({
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      // We do NOT select passwordHash for security
+    },
     orderBy: { createdAt: "desc" },
-    select: { id: true, email: true, role: true, createdAt: true },
   });
 
-  return NextResponse.json({ ok: true, users }, { status: 200 });
+  return NextResponse.json({ ok: true, members });
 }
 
 export async function POST(req: Request) {
-  const g = await requireRole([Role.ADMIN]);
-  if (!g.ok) return g.response;
+  const auth = await requireRole(ALLOWED_ROLES);
+  if (!auth.ok) return auth.response;
 
-  const text = await req.text();
-  if (!text) return NextResponse.json({ ok: false, error: "Missing JSON body" }, { status: 400 });
+  const body = await req.json();
+  const { email, password, role } = body;
 
-  let body: any;
+  if (!email || !password || !role) {
+    return NextResponse.json({ ok: false, error: "Missing fields" }, { status: 400 });
+  }
+
   try {
-    body = JSON.parse(text);
-  } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    // ✅ Use 'prisma.user' and map 'password' to 'passwordHash'
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: password, // ✅ Saving to 'passwordHash' field
+        role: role as Role,
+      },
+    });
+
+    return NextResponse.json({ ok: true, user: newUser });
+  } catch (error: any) {
+    return NextResponse.json(
+      { ok: false, error: error.message || "Failed to create user" },
+      { status: 500 }
+    );
   }
-
-  const email = String(body?.email || "").trim().toLowerCase();
-  const password = String(body?.password || "");
-  const role = (body?.role || Role.ADMIN) as Role;
-
-  if (!email || !password) {
-    return NextResponse.json({ ok: false, error: "Missing email/password" }, { status: 400 });
-  }
-
-  const exists = await prisma.user.findUnique({ where: { email } });
-  if (exists) return NextResponse.json({ ok: false, error: "User already exists" }, { status: 409 });
-
-  const passwordHash = await hashPassword(password);
-
-  const created = await prisma.user.create({
-    data: { email, passwordHash, role },
-    select: { id: true, email: true, role: true, createdAt: true },
-  });
-
-  return NextResponse.json({ ok: true, user: created }, { status: 201 });
 }

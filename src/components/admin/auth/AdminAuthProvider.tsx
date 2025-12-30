@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-export type AdminRole = "OWNER" | "ADMIN" | "EDITOR" | "SEO_MANAGER" | "VIEWER";
+// ✅ UPDATED: Roles matching your prisma schema
+export type AdminRole = "ADMIN" | "EDITOR" | "SEO_MANAGER" | "CONTENT_WRITER" | "DEVELOPER";
 
 export type AdminUser = {
   id: number;
@@ -10,24 +11,15 @@ export type AdminUser = {
   role: AdminRole;
 };
 
+// ... (Keep the rest of the file EXACTLY as it was, just change the AdminRole type above) ...
 type Ctx = {
   user: AdminUser | null;
   loading: boolean;
-
-  // kept for compatibility with pages using role/roleLoading
   role: AdminRole | null;
   roleLoading: boolean;
-
-  // used by login page
   signInEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-
-  // used by user menu etc
   logout: () => Promise<void>;
-
-  // used by some pages (old firebase flow) – keep as harmless no-op
   refreshClaims: () => Promise<void>;
-
-  // handy manual refresh
   refresh: () => Promise<void>;
 };
 
@@ -51,7 +43,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   async function refresh() {
     if (BYPASS) {
-      setUser({ id: 1, email: "bypass@local", role: "ADMIN" });
+      // ✅ Updated mock role for bypass
+      setUser({ id: 1, email: "bypass@local", role: "DEVELOPER" });
       setLoading(false);
       return;
     }
@@ -80,7 +73,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signInEmail(email: string, password: string) {
     if (BYPASS) {
-      setUser({ id: 1, email, role: "ADMIN" });
+      setUser({ id: 1, email, role: "DEVELOPER" });
       return { ok: true };
     }
 
@@ -97,7 +90,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: false, error: j?.error || "Login failed" };
       }
 
-      // cookie is set server-side; now sync user
       await refresh();
       return { ok: true };
     } catch (e: any) {
@@ -118,10 +110,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function refreshClaims() {
-    // Firebase legacy compatibility (no-op in cookie auth)
-    return;
-  }
+  async function refreshClaims() { return; }
 
   const value: Ctx = useMemo(() => {
     const role = user?.role ?? null;

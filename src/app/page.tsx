@@ -1,10 +1,39 @@
-export default function DashboardPage() {
-  return (
-    <div className="theme-bg theme-border border rounded-xl p-6">
-      <div className="text-xl font-black text-primary">Dashboard</div>
-      <div className="mt-2 text-secondary text-sm">
-        Go to <span className="font-semibold">Sites → LiveSocceRR</span> to manage SEO.
-      </div>
-    </div>
-  );
+import { prisma } from "@/lib/db/prisma";
+import DashboardClient from "@/components/admin/dashboard/DashboardClient";
+
+// Force dynamic so counts update on every refresh
+export const dynamic = "force-dynamic";
+
+export default async function AdminDashboard() {
+  // 1. Fetch Real Counts in Parallel
+  const [
+    userCount,
+    leagueCount,
+    matchCount,
+    playerCount,
+    pageCount,
+    recentUsers
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.seoLeague.count(),
+    prisma.seoMatch.count(),
+    prisma.seoPlayer.count(),
+    prisma.seoPage.count(),
+    // Fetch last 5 members for the "Recent Activity" table
+    prisma.user.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      select: { id: true, email: true, role: true, createdAt: true },
+    }),
+  ]);
+
+  const stats = {
+    users: userCount,
+    leagues: leagueCount,
+    matches: matchCount,
+    players: playerCount,
+    pages: pageCount,
+  };
+
+  return <DashboardClient stats={stats} recentUsers={recentUsers} />;
 }

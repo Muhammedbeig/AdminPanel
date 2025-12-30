@@ -56,3 +56,10 @@ model SeoPage {
   data      Json
   updatedAt DateTime @updatedAt
 }
+
+model AdminConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique // We will use "global_settings" as the key
+  data      Json
+  updatedAt DateTime @updatedAt
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, Home } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -23,7 +23,24 @@ export default function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => vo
     ? "text-secondary hover:bg-slate-800"
     : "text-white/90 hover:bg-white/10 hover:text-white";
 
-  const [logoOk, setLogoOk] = useState(true);
+  // ✅ New State for Dynamic Branding
+  const [config, setConfig] = useState({ siteName: "LiveSocceRR Admin", logoUrl: "" });
+  const [loadingConfig, setLoadingConfig] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/config")
+      .then((res) => res.json())
+      .then((j) => {
+        if (j.ok && j.data) {
+          setConfig({
+            siteName: j.data.siteName || "LiveSocceRR Admin",
+            logoUrl: j.data.logoUrl || "",
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingConfig(false));
+  }, []);
 
   return (
     <header className={`${headerClass} h-16 sticky top-0 z-40 shadow-sm transition-colors duration-200`}>
@@ -40,26 +57,25 @@ export default function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => vo
 
         {/* Brand */}
         <Link href="/" className="flex items-center gap-3 whitespace-nowrap">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm shrink-0 ${logoPillClass}`}>
-            {logoOk ? (
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm shrink-0 overflow-hidden ${logoPillClass}`}>
+            {/* ✅ Dynamic Logo Logic */}
+            {config.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src="/brand/logo.svg"
-                alt="LiveSocceRR Admin"
-                title="LiveSocceRR Admin"
-                className="w-6 h-6"
-                loading="eager"
-                decoding="async"
-                onError={() => setLogoOk(false)}
+                src={config.logoUrl}
+                alt="Logo"
+                className="w-full h-full object-contain p-1"
               />
             ) : (
+              // Fallback Icon
               <Home size={18} />
             )}
           </div>
 
           <div className="min-w-0">
+            {/* ✅ Dynamic Site Name */}
             <div className={`text-xl md:text-2xl font-bold tracking-tight leading-none ${titleClass}`}>
-              LiveSocceRR Admin
+               {loadingConfig ? "Loading..." : config.siteName}
             </div>
             <div className={`text-[11px] font-medium leading-4 ${subClass}`}>Control Panel</div>
           </div>
