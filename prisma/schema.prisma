@@ -15,14 +15,26 @@ enum Role {
   DEVELOPER
 }
 
+// ✅ UPDATED: User model now supports Author Profiles for Blogs
 model User {
   id           Int      @id @default(autoincrement())
   email        String   @unique
   passwordHash String
   role         Role     @default(EDITOR)
+
+  // New Author Fields
+  name         String?
+  image        String?  // Profile picture URL
+  bio          String?  @db.Text
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  // Relation to Blog Posts
+  posts        BlogPost[]
 }
+
+// --- EXISTING SEO MODELS ---
 
 model SeoGlobal {
   id        Int      @id @default(autoincrement())
@@ -37,6 +49,7 @@ model SeoMatch {
   data      Json
   updatedAt DateTime @updatedAt
 }
+
 model SeoLeague {
   id        Int      @id @default(autoincrement())
   key       String   @unique
@@ -50,6 +63,7 @@ model SeoPlayer {
   data      Json
   updatedAt DateTime @updatedAt
 }
+
 model SeoPage {
   id        Int      @id @default(autoincrement())
   slug      String   @unique
@@ -57,9 +71,56 @@ model SeoPage {
   updatedAt DateTime @updatedAt
 }
 
+// --- ADMIN CONFIG ---
+
 model AdminConfig {
   id        Int      @id @default(autoincrement())
   key       String   @unique // We will use "global_settings" as the key
   data      Json
   updatedAt DateTime @updatedAt
+}
+
+// --- ✅ NEW: BLOG SYSTEM MODELS ---
+
+model BlogCategory {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  slug      String     @unique
+  posts     BlogPost[]
+}
+
+model BlogPost {
+  id            Int      @id @default(autoincrement())
+  
+  // Core Content
+  title         String
+  slug          String   @unique
+  excerpt       String?  @db.Text
+  content       String   @db.LongText // Rich HTML content
+  featuredImage String?
+  
+  // Organization
+  categoryId    Int?
+  category      BlogCategory? @relation(fields: [categoryId], references: [id])
+  
+  // SEO Fields (Matches your guidelines)
+  metaTitle       String?
+  metaDescription String? @db.Text
+  keywords        String? // Comma-separated
+  
+  // Advanced SEO Overrides
+  ogTitle       String?
+  ogDescription String?
+  ogImage       String?
+  
+  // Status
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  
+  // Author Linking
+  authorId      Int
+  author        User      @relation(fields: [authorId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
