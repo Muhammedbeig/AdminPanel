@@ -90,6 +90,18 @@ export default function BlogEditor({ post }: EditorProps) {
     }
   }
 
+  // Helper for Tab Classes (Fixed: Uses 'text-blue-600' for perfect Deep Blue)
+  const getTabClass = (tab: string) => {
+    const isActive = activeTab === tab;
+    if (isActive) {
+      return "px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 " +
+             "bg-blue-50 text-blue-600 border-blue-600 " + 
+             "dark:bg-blue-500/10 dark:text-blue-500 dark:border-blue-500";
+    }
+    return "px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 " +
+           "border-transparent text-secondary hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5";
+  };
+
   return (
     <div className="max-w-7xl mx-auto pb-20 space-y-6 animate-in fade-in duration-500">
       
@@ -102,8 +114,8 @@ export default function BlogEditor({ post }: EditorProps) {
            <div>
              <h1 className="text-xl font-black text-primary">{post ? "Edit Post" : "New Post"}</h1>
              <div className="flex items-center gap-3 text-xs font-mono mt-1">
-                {/* Fixed: Word Count Badge matching Active Tab Colors */}
-                <span className="px-2 py-0.5 rounded font-bold bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-200 dark:border-blue-900/30">
+                {/* Word Count: Matches Deep Blue Active State */}
+                <span className="px-2 py-0.5 rounded font-bold bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500 border border-blue-200 dark:border-blue-900/30">
                   {wordCount} words
                 </span>
                 <span className="text-secondary opacity-50">•</span>
@@ -136,9 +148,9 @@ export default function BlogEditor({ post }: EditorProps) {
         {/* --- LEFT COLUMN: EDITOR --- */}
         <div className="lg:col-span-2 space-y-6">
            
-           {/* Fixed: Title Placeholder Visibility */}
+           {/* Title: Darker placeholder for visibility */}
            <input 
-             className="w-full text-4xl font-black bg-transparent border-none outline-none text-primary placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
+             className="w-full text-4xl font-black bg-transparent border-none outline-none text-primary placeholder:text-slate-500 dark:placeholder:text-slate-500 transition-colors"
              placeholder="Article Title Here..."
              value={formData.title}
              onChange={handleTitleChange}
@@ -149,7 +161,7 @@ export default function BlogEditor({ post }: EditorProps) {
                 <Globe size={12} />
                 <span className="opacity-50 shrink-0">/blog/</span>
                 <input 
-                  className="bg-transparent outline-none text-blue-500 font-bold w-full"
+                  className="bg-transparent outline-none text-blue-600 dark:text-blue-500 font-bold w-full"
                   value={formData.slug}
                   onChange={e => setFormData({...formData, slug: e.target.value})}
                   placeholder="post-url-slug"
@@ -171,24 +183,17 @@ export default function BlogEditor({ post }: EditorProps) {
               </div>
            </div>
 
+           {/* Tabs */}
            <div className="flex items-center gap-1 border-b theme-border">
-             {[
-               { id: "content", icon: FileText, label: "Write Story" },
-               { id: "seo", icon: Globe, label: "SEO Settings" },
-               { id: "schema", icon: LayoutList, label: "FAQ Schema" },
-             ].map(tab => (
-               <button 
-                 key={tab.id}
-                 onClick={() => setActiveTab(tab.id as any)}
-                 className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
-                   activeTab === tab.id 
-                     ? "border-blue-500 text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-900/10" 
-                     : "border-transparent text-secondary hover:text-primary"
-                 }`}
-               >
-                 <tab.icon size={16} /> {tab.label}
-               </button>
-             ))}
+             <button onClick={() => setActiveTab("content")} className={getTabClass("content")}>
+               <FileText size={16} /> Write Story
+             </button>
+             <button onClick={() => setActiveTab("seo")} className={getTabClass("seo")}>
+               <Globe size={16} /> SEO Settings
+             </button>
+             <button onClick={() => setActiveTab("schema")} className={getTabClass("schema")}>
+               <LayoutList size={16} /> FAQ Schema
+             </button>
            </div>
 
            {/* === TAB: RICH TEXT EDITOR === */}
@@ -246,9 +251,10 @@ export default function BlogEditor({ post }: EditorProps) {
            {/* === TAB: SCHEMA === */}
            {activeTab === "schema" && (
              <div className="space-y-6 animate-in fade-in">
-                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-4 rounded-xl">
-                   <h3 className="text-blue-700 dark:text-blue-400 font-bold text-sm mb-1">FAQ Schema Generator</h3>
-                   <p className="text-blue-600/80 dark:text-blue-400/70 text-xs">
+                {/* Fixed: Dialogue Bar uses Deep Blue 'Selected Tab' colors */}
+                <div className="bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-500 dark:border-blue-500/30 p-4 rounded-xl">
+                   <h3 className="font-bold text-sm mb-1">FAQ Schema Generator</h3>
+                   <p className="text-xs opacity-80">
                      Add questions below to automatically generate JSON-LD FAQ schema for Google Rich Results.
                    </p>
                 </div>
@@ -263,7 +269,7 @@ export default function BlogEditor({ post }: EditorProps) {
                          ✕
                        </button>
                        <input 
-                         className="w-full bg-transparent border-b theme-border px-0 py-1 font-bold text-sm text-primary outline-none mb-2 focus:border-blue-500"
+                         className="w-full bg-transparent border-b theme-border px-0 py-1 font-bold text-sm text-primary outline-none mb-2 focus:border-blue-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                          placeholder="Question..."
                          value={faq.question}
                          onChange={e => {
@@ -271,7 +277,7 @@ export default function BlogEditor({ post }: EditorProps) {
                          }}
                        />
                        <textarea 
-                         className="w-full bg-transparent border-none px-0 py-1 text-sm text-secondary outline-none h-16 resize-none"
+                         className="w-full bg-transparent border-none px-0 py-1 text-sm text-secondary outline-none h-16 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                          placeholder="Answer..."
                          value={faq.answer}
                          onChange={e => {
@@ -293,16 +299,16 @@ export default function BlogEditor({ post }: EditorProps) {
           <div className="theme-bg theme-border border rounded-xl p-4">
             <h3 className="text-xs font-black text-secondary uppercase tracking-widest mb-3">Featured Image</h3>
             
-            {/* Fixed: Image Hover matches Active Tab Color */}
-            <div className="aspect-video bg-slate-100 dark:bg-white/5 rounded-lg border-2 border-dashed theme-border flex items-center justify-center relative overflow-hidden group transition-all hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10">
+            {/* Fixed: Image Hover matches Active Tab (Deep Blue Border/Text) */}
+            <div className="aspect-video bg-slate-100 dark:bg-white/5 rounded-lg border-2 border-dashed theme-border flex items-center justify-center relative overflow-hidden group transition-all hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10">
               
               {formData.featuredImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={formData.featuredImage} alt="Cover" className="w-full h-full object-cover" />
               ) : (
                 <div className="text-center p-4">
-                  <ImageIcon className="text-secondary opacity-30 mx-auto mb-2 group-hover:text-blue-500 transition-colors" size={32} />
-                  <p className="text-[10px] text-secondary group-hover:text-blue-600 dark:group-hover:text-blue-400">1200x630px (Recommended)</p>
+                  <ImageIcon className="text-secondary opacity-30 mx-auto mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-500 transition-colors" size={32} />
+                  <p className="text-[10px] text-secondary group-hover:text-blue-600 dark:group-hover:text-blue-500 transition-colors">1200x630px (Recommended)</p>
                 </div>
               )}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -357,12 +363,12 @@ function RichTextEditor({ initialContent, onChange }: { initialContent: string, 
   const [html, setHtml] = useState(initialContent);
   const [activeFormats, setActiveFormats] = useState<string[]>([]);
 
-  // 1. Initial Load Only (Prevents "Backward Writing" Issue)
+  // 1. Initial Load Only (Prevents Backward Writing)
   useEffect(() => {
     if (editorRef.current && initialContent && !editorRef.current.innerHTML) {
       editorRef.current.innerHTML = initialContent;
     }
-  }, []); // Only runs ONCE on mount
+  }, []); 
 
   // 2. Button Action
   const exec = (command: string, value: string | undefined = undefined) => {

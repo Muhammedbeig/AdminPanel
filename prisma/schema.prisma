@@ -71,16 +71,6 @@ model SeoPage {
   updatedAt DateTime @updatedAt
 }
 
-// --- ADMIN CONFIG ---
-
-model AdminConfig {
-  id        Int      @id @default(autoincrement())
-  key       String   @unique // We will use "global_settings" as the key
-  data      Json
-  updatedAt DateTime @updatedAt
-}
-
-// --- ✅ NEW: BLOG SYSTEM MODELS ---
 
 model BlogCategory {
   id        Int        @id @default(autoincrement())
@@ -123,4 +113,26 @@ model BlogPost {
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model SystemSetting {
+  id                Int      @id @default(1)
+  
+  // Branding
+  logo              String?
+  favicon           String?
+  
+  // Panel Identity
+  siteName          String?  @default("Admin Panel") // This controls the "Panel Title"
+  supportEmail      String?
+  contactNumber     String?
+  address           String?  @db.Text
+  
+  // Config
+  defaultLanguage   String   @default("en")
+  timezone          String   @default("UTC")
+  maintenanceMode   Boolean  @default(false)
+  googleAnalyticsId String?
+
+  updatedAt         DateTime @updatedAt
 }

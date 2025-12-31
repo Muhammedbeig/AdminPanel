@@ -24,21 +24,26 @@ export default function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => vo
     : "text-white/90 hover:bg-white/10 hover:text-white";
 
   // ✅ New State for Dynamic Branding
-  const [config, setConfig] = useState({ siteName: "LiveSocceRR Admin", logoUrl: "" });
+  // We initialize with defaults to prevent layout shifts
+  const [config, setConfig] = useState({ 
+    siteName: "LiveSocceRR Admin", 
+    logo: "" 
+  });
   const [loadingConfig, setLoadingConfig] = useState(true);
 
+  // ✅ Fetch from the NEW Settings API
   useEffect(() => {
-    fetch("/api/admin/config")
+    fetch("/api/admin/settings")
       .then((res) => res.json())
       .then((j) => {
-        if (j.ok && j.data) {
+        if (j.ok && j.settings) {
           setConfig({
-            siteName: j.data.siteName || "LiveSocceRR Admin",
-            logoUrl: j.data.logoUrl || "",
+            siteName: j.settings.siteName || "LiveSocceRR Admin",
+            logo: j.settings.logo || "", // Note: API returns 'logo', not 'logoUrl'
           });
         }
       })
-      .catch(() => {})
+      .catch((err) => console.error("Header config load failed", err))
       .finally(() => setLoadingConfig(false));
   }, []);
 
@@ -59,10 +64,10 @@ export default function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => vo
         <Link href="/" className="flex items-center gap-3 whitespace-nowrap">
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm shrink-0 overflow-hidden ${logoPillClass}`}>
             {/* ✅ Dynamic Logo Logic */}
-            {config.logoUrl ? (
+            {config.logo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={config.logoUrl}
+                src={config.logo}
                 alt="Logo"
                 className="w-full h-full object-contain p-1"
               />
