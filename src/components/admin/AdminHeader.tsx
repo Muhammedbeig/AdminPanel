@@ -6,39 +6,35 @@ import { Menu, Home } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import AdminThemeToggle from "@/components/admin/AdminThemeToggle";
 import AdminUserMenu from "@/components/admin/AdminUserMenu";
+import HeaderCommandSearch from "@/components/admin/HeaderCommandSearch";
 
 export default function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  // Light: blue header like reference
-  // Dark: themed header
+  // ✅ PRESERVED: Your exact design logic
   const headerClass = isDark ? "theme-bg theme-border border-b" : "bg-[#0f80da] border-none";
-
   const logoPillClass = isDark ? "bg-[#0f80da] text-white" : "bg-white text-[#0f80da]";
   const titleClass = isDark ? "text-primary" : "text-white";
   const subClass = isDark ? "text-secondary" : "text-white/80";
-
   const iconBtnClass = isDark
     ? "text-secondary hover:bg-slate-800"
     : "text-white/90 hover:bg-white/10 hover:text-white";
 
-  // ✅ New State for Dynamic Branding
   const [config, setConfig] = useState({ 
     siteName: "LiveSocceRR Admin", 
-    logo: "" // Changed from logoUrl to logo
+    logo: "" 
   });
   const [loadingConfig, setLoadingConfig] = useState(true);
 
   useEffect(() => {
-    // ✅ FIX: Use the correct settings API
     fetch("/api/admin/settings")
       .then((res) => res.json())
       .then((j) => {
         if (j.ok && j.settings) {
           setConfig({
             siteName: j.settings.siteName || "LiveSocceRR Admin",
-            logo: j.settings.logo || "", // ✅ FIX: Use 'logo' column
+            logo: j.settings.logo || "", 
           });
         }
       })
@@ -49,35 +45,19 @@ export default function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => vo
   return (
     <header className={`${headerClass} h-16 sticky top-0 z-40 shadow-sm transition-colors duration-200`}>
       <div className="mx-auto max-w-7xl h-full px-4 flex items-center gap-3">
-        {/* Mobile menu button */}
-        <button
-          type="button"
-          onClick={onOpenSidebar}
-          className={`lg:hidden p-2.5 rounded-full transition-colors ${iconBtnClass}`}
-          aria-label="Open menu"
-        >
-          <Menu size={22} />
-        </button>
-
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-3 whitespace-nowrap">
+        
+        {/* Brand (Now First) */}
+        <Link href="/" className="flex items-center gap-3 whitespace-nowrap mr-4">
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm shrink-0 overflow-hidden ${logoPillClass}`}>
-            {/* ✅ Dynamic Logo Logic */}
             {config.logo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={config.logo}
-                alt="Logo"
-                className="w-full h-full object-contain p-1"
-              />
+              <img src={config.logo} alt="Logo" className="w-full h-full object-contain p-1" />
             ) : (
-              // Fallback Icon
               <Home size={18} />
             )}
           </div>
 
-          <div className="min-w-0">
-            {/* ✅ Dynamic Site Name */}
+          <div className="min-w-0 hidden md:block">
             <div className={`text-xl md:text-2xl font-bold tracking-tight leading-none ${titleClass}`}>
                {loadingConfig ? "Loading..." : config.siteName}
             </div>
@@ -85,10 +65,25 @@ export default function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => vo
           </div>
         </Link>
 
-        {/* Right actions */}
+        {/* Center Search */}
+        <div className="flex-1 flex justify-end md:justify-center px-2">
+           <HeaderCommandSearch />
+        </div>
+
+        {/* Right Actions */}
         <div className="ml-auto flex items-center gap-1">
           <AdminThemeToggle />
           <AdminUserMenu />
+
+          {/* ✅ MOVED: Mobile Menu Button is now here */}
+          <button
+            type="button"
+            onClick={onOpenSidebar}
+            className={`lg:hidden p-2.5 rounded-full transition-colors ${iconBtnClass}`}
+            aria-label="Open menu"
+          >
+            <Menu size={22} />
+          </button>
         </div>
       </div>
     </header>

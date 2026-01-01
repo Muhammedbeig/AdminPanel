@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { 
   Users, Globe, Trophy, Shield, 
@@ -21,6 +21,19 @@ type DashboardProps = {
 
 export default function DashboardClient({ stats, recentUsers }: DashboardProps) {
   const { user } = useAdminAuth();
+  const [displayName, setDisplayName] = useState("");
+
+  // ✅ Fetch full profile to get the Name (since session usually only has email)
+  useEffect(() => {
+    fetch("/api/admin/profile")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && data.user?.name) {
+          setDisplayName(data.user.name);
+        }
+      })
+      .catch(() => {}); // Silent fail, fallback to email
+  }, []);
 
   // Helper to render a Stats Card (Using Theme Classes)
   const StatCard = ({ title, value, icon: Icon, color, href }: any) => (
@@ -48,9 +61,13 @@ export default function DashboardClient({ stats, recentUsers }: DashboardProps) 
         <div>
           <h1 className="text-3xl font-black text-primary">Dashboard</h1>
           <p className="text-secondary mt-1 flex items-center gap-2 flex-wrap">
-            Welcome back, <span className="font-bold text-blue-500">{user?.email || "Admin"}</span>
+            Welcome back, 
+            {/* ✅ Priority: Name > Email > "Admin" */}
+            <span className="font-bold text-blue-500">
+              {displayName || user?.email || "Admin"}
+            </span>
             
-            {/* ✅ ADDED: Role Badge (Visible in Light/Dark) */}
+            {/* Role Badge */}
             {user?.role && (
               <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                 {user.role}
@@ -137,7 +154,6 @@ export default function DashboardClient({ stats, recentUsers }: DashboardProps) 
                       <div className="font-bold text-primary text-sm">{u.email}</div>
                     </td>
                     <td className="p-4">
-                      {/* ✅ FIXED: High contrast role badge for Light Mode */}
                       <span className="px-2 py-1 rounded-md bg-slate-200 dark:bg-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                         {u.role}
                       </span>
@@ -189,7 +205,6 @@ export default function DashboardClient({ stats, recentUsers }: DashboardProps) 
                </div>
                <div className="flex justify-between text-sm items-center">
                  <span className="text-secondary">Environment</span>
-                 {/* ✅ FIXED: Explicit text color for Light Mode 'development' text */}
                  <span className="font-mono text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-200 dark:border-slate-700">
                    {process.env.NODE_ENV}
                  </span>
@@ -203,7 +218,6 @@ export default function DashboardClient({ stats, recentUsers }: DashboardProps) 
 
         </div>
       </div>
-
     </div>
   );
 }

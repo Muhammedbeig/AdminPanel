@@ -12,8 +12,11 @@ import {
   Shield,
   Settings,
   FileText,
-  PenTool, // ✅ New Icon for Blogs
-  Layers,  // ✅ New Icon for Categories
+  PenTool, 
+  Layers,
+  Image as ImageIcon,
+  HelpCircle, // ✅ New Icon for FAQs
+  Tag         // ✅ New Icon for Categories
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
@@ -102,13 +105,19 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
 
   const main: NavItem[] = [
     { href: "/", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
+    { href: "/media", label: "Media Library", icon: <ImageIcon size={16} /> },
   ];
 
-  // ✅ NEW: Blog Manager Section
   const blogManager: NavItem[] = [
     { href: "/blogs", label: "All Posts", icon: <PenTool size={16} /> },
-    { href: "/blogs/new", label: "Write New", icon: <FileText size={16} />, badge: "NEW" },
+    { href: "/blogs/new", label: "Write New", icon: <FileText size={16} />},
     { href: "/blogs/categories", label: "Categories", icon: <Layers size={16} /> },
+  ];
+
+  // ✅ NEW: Knowledge Base Section (FAQs)
+  const knowledgeBase: NavItem[] = [
+    { href: "/faqs", label: "Manage FAQs", icon: <HelpCircle size={16} /> },
+    { href: "/faqs/categories", label: "FAQ Categories", icon: <Tag size={16} /> },
   ];
 
   const seoManager: NavItem[] = [
@@ -135,25 +144,35 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
         
         <Section title="Main" items={main} />
 
-        {/* ✅ Blog Manager: Visible to Writers, Editors, SEO Managers */}
+        {/* Blog Manager */}
         <Section 
           title="Blog Manager" 
           items={blogManager} 
           allowedRoles={["CONTENT_WRITER", "EDITOR", "SEO_MANAGER", "ADMIN", "DEVELOPER"]} 
         />
+
+        {/* ✅ Knowledge Base (FAQs) */}
+        <Section 
+          title="Knowledge Base" 
+          items={knowledgeBase} 
+          allowedRoles={["CONTENT_WRITER", "EDITOR", "ADMIN", "DEVELOPER"]} 
+        />
         
+        {/* SEO Manager */}
         <Section 
           title="SEO Manager" 
           items={seoManager} 
           allowedRoles={["SEO_MANAGER", "EDITOR", "ADMIN", "DEVELOPER"]} 
         />
         
+        {/* Content Pages */}
         <Section 
           title="Content Pages" 
           items={pages} 
           allowedRoles={["SEO_MANAGER", "EDITOR", "CONTENT_WRITER", "ADMIN", "DEVELOPER"]} 
         />
         
+        {/* Admin Settings */}
         <Section 
           title="Admin" 
           items={admin} 

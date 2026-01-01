@@ -4,9 +4,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Save, Image as ImageIcon, Globe, FileText, ArrowLeft, 
-  LayoutList
+  LayoutList, CheckCircle2, RotateCcw
 } from "lucide-react";
-// ✅ IMPORT THE NEW COMPONENT
+// ✅ IMPORT THE ADVANCED EDITOR
 import RichTextEditor from "@/components/ui/RichTextEditor";
 
 type EditorProps = {
@@ -15,11 +15,18 @@ type EditorProps = {
 
 type FAQ = { question: string; answer: string };
 
+const AUTO_SAVE_KEY = "blog_editor_draft_v1";
+
 export default function BlogEditor({ post }: EditorProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   
+  // --- AUTO-SAVE STATES ---
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+
   const [formData, setFormData] = useState({
     title: post?.title || "",
     slug: post?.slug || "",
@@ -42,20 +49,67 @@ export default function BlogEditor({ post }: EditorProps) {
   const wordCount = safeContent.replace(/<[^>]*>/g, '').split(/\s+/g).filter(Boolean).length;
   const readingTime = Math.ceil(wordCount / 200);
 
+  // --- 1. LOAD DRAFT ON MOUNT ---
   useEffect(() => {
+    // Only look for drafts if we are creating a NEW post (to avoid overwriting existing DB data)
+    if (!post) {
+      const saved = localStorage.getItem(AUTO_SAVE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Simple check to see if draft is empty
+          if (parsed.formData.title || parsed.formData.content) {
+            if (confirm("Found an unsaved draft from your last session. Restore it?")) {
+              setFormData(parsed.formData);
+              setFaqs(parsed.faqs);
+              setDraftRestored(true);
+              setLastSaved(new Date());
+            } else {
+              localStorage.removeItem(AUTO_SAVE_KEY);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse draft", e);
+        }
+      }
+    }
+    
+    // Load Categories
     fetch("/api/admin/blogs/categories")
       .then(res => res.json())
       .then(data => { if(data.ok) setCategories(data.categories) });
   }, []);
 
+  // --- 2. AUTO-SAVE TIMER ---
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const timer = setTimeout(() => {
+      localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify({ formData, faqs }));
+      setLastSaved(new Date());
+      setHasUnsavedChanges(false);
+    }, 3000); // Save 3 seconds after typing stops
+
+    return () => clearTimeout(timer);
+  }, [formData, faqs, hasUnsavedChanges]);
+
+  // Helper to update state and trigger auto-save
+  const updateField = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+  };
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
+    const newSlug = !post ? val.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "") : formData.slug;
+    
     setFormData(prev => ({
       ...prev,
       title: val,
-      slug: !post ? val.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "") : prev.slug,
+      slug: newSlug,
       metaTitle: !post ? val : prev.metaTitle,
     }));
+    setHasUnsavedChanges(true);
   };
 
   async function handleSave() {
@@ -73,6 +127,7 @@ export default function BlogEditor({ post }: EditorProps) {
       const data = await res.json();
       
       if (data.ok) {
+        localStorage.removeItem(AUTO_SAVE_KEY); // Clear draft on success
         alert(post ? "Saved successfully!" : "Post created!");
         router.push("/blogs");
       } else {
@@ -104,13 +159,31 @@ export default function BlogEditor({ post }: EditorProps) {
              <ArrowLeft size={20} className="text-secondary" />
            </button>
            <div>
-             <h1 className="text-xl font-black text-primary">{post ? "Edit Post" : "New Post"}</h1>
+             <h1 className="text-xl font-black text-primary flex items-center gap-2">
+               {post ? "Edit Post" : "New Post"}
+               {draftRestored && (
+                 <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                   <RotateCcw size={10} /> Draft Restored
+                 </span>
+               )}
+             </h1>
              <div className="flex items-center gap-3 text-xs font-mono mt-1">
                 <span className="px-2 py-0.5 rounded font-bold bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500 border border-blue-200 dark:border-blue-900/30">
                   {wordCount} words
                 </span>
                 <span className="text-secondary opacity-50">•</span>
                 <span className="text-secondary">{readingTime} min read</span>
+                
+                {/* ✅ Auto-Save Indicator */}
+                {lastSaved && (
+                  <>
+                    <span className="text-secondary opacity-50">•</span>
+                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold transition-opacity duration-500">
+                      <CheckCircle2 size={12} />
+                      Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </>
+                )}
              </div>
            </div>
         </div>
@@ -120,7 +193,7 @@ export default function BlogEditor({ post }: EditorProps) {
               type="checkbox" 
               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               checked={formData.isPublished}
-              onChange={e => setFormData({ ...formData, isPublished: e.target.checked })}
+              onChange={e => updateField("isPublished", e.target.checked)}
             />
             Publish Live
           </label>
@@ -153,7 +226,7 @@ export default function BlogEditor({ post }: EditorProps) {
                 <input 
                   className="bg-transparent outline-none text-blue-600 dark:text-blue-500 font-bold w-full"
                   value={formData.slug}
-                  onChange={e => setFormData({...formData, slug: e.target.value})}
+                  onChange={e => updateField("slug", e.target.value)}
                   placeholder="post-url-slug"
                 />
               </div>
@@ -161,7 +234,7 @@ export default function BlogEditor({ post }: EditorProps) {
                 <select 
                   className="w-full px-3 py-2 rounded-lg theme-bg theme-border border text-xs font-bold text-primary outline-none focus:ring-2 focus:ring-blue-500/50"
                   value={formData.categoryId}
-                  onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
+                  onChange={e => updateField("categoryId", e.target.value)}
                 >
                   <option value="">Select Category...</option>
                   {categories.map(c => (
@@ -189,11 +262,11 @@ export default function BlogEditor({ post }: EditorProps) {
            {/* === TAB: RICH TEXT EDITOR === */}
            {activeTab === "content" && (
              <div className="animate-in fade-in space-y-4">
-                {/* ✅ USING NEW COMPONENT WITH FIXED HEIGHT & SCROLL */}
+                {/* ✅ Using Advanced Editor with Media Library & Auto-Save hookup */}
                 <RichTextEditor 
                   initialContent={formData.content} 
-                  onChange={(html) => setFormData({...formData, content: html})}
-                  height="h-[700px]" // Tall enough for writing
+                  onChange={(html) => updateField("content", html)}
+                  height="h-[700px]" 
                 />
              </div>
            )}
@@ -223,7 +296,7 @@ export default function BlogEditor({ post }: EditorProps) {
                     <input 
                       className="w-full px-3 py-2 rounded-lg theme-bg theme-border border text-sm text-primary"
                       value={formData.metaTitle}
-                      onChange={e => setFormData({ ...formData, metaTitle: e.target.value })}
+                      onChange={e => updateField("metaTitle", e.target.value)}
                       maxLength={60}
                     />
                   </div>
@@ -232,7 +305,7 @@ export default function BlogEditor({ post }: EditorProps) {
                     <textarea 
                       className="w-full px-3 py-2 rounded-lg theme-bg theme-border border text-sm text-primary h-24 resize-none"
                       value={formData.metaDescription}
-                      onChange={e => setFormData({ ...formData, metaDescription: e.target.value })}
+                      onChange={e => updateField("metaDescription", e.target.value)}
                       maxLength={160}
                     />
                   </div>
@@ -254,7 +327,11 @@ export default function BlogEditor({ post }: EditorProps) {
                   {faqs.map((faq, i) => (
                     <div key={i} className="mb-4 p-4 rounded-lg bg-slate-50 dark:bg-white/5 border theme-border relative group">
                        <button 
-                         onClick={() => setFaqs(faqs.filter((_, idx) => idx !== i))}
+                         onClick={() => {
+                           const newFaqs = faqs.filter((_, idx) => idx !== i);
+                           setFaqs(newFaqs);
+                           setHasUnsavedChanges(true);
+                         }}
                          className="absolute top-2 right-2 text-red-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
                        >
                          ✕
@@ -265,6 +342,7 @@ export default function BlogEditor({ post }: EditorProps) {
                          value={faq.question}
                          onChange={e => {
                             const newFaqs = [...faqs]; newFaqs[i].question = e.target.value; setFaqs(newFaqs);
+                            setHasUnsavedChanges(true);
                          }}
                        />
                        <textarea 
@@ -273,6 +351,7 @@ export default function BlogEditor({ post }: EditorProps) {
                          value={faq.answer}
                          onChange={e => {
                             const newFaqs = [...faqs]; newFaqs[i].answer = e.target.value; setFaqs(newFaqs);
+                            setHasUnsavedChanges(true);
                          }}
                        />
                     </div>
@@ -307,7 +386,7 @@ export default function BlogEditor({ post }: EditorProps) {
                       if(!file) return;
                       const fd = new FormData(); fd.append("file", file); fd.append("kind", "blog");
                       fetch("/api/admin/upload-file", {method:"POST", body:fd})
-                        .then(r=>r.json()).then(d=>d.ok && setFormData({...formData, featuredImage: d.url}));
+                        .then(r=>r.json()).then(d=>d.ok && updateField("featuredImage", d.url));
                    }} />
                  </label>
               </div>
@@ -320,7 +399,7 @@ export default function BlogEditor({ post }: EditorProps) {
               className="w-full px-3 py-2 rounded-lg theme-bg theme-border border text-sm text-primary outline-none focus:ring-2 focus:ring-blue-500/50 h-32 resize-none"
               placeholder="Short summary for cards..."
               value={formData.excerpt}
-              onChange={e => setFormData({ ...formData, excerpt: e.target.value })}
+              onChange={e => updateField("excerpt", e.target.value)}
             />
           </div>
 
@@ -332,7 +411,7 @@ export default function BlogEditor({ post }: EditorProps) {
                 className="bg-transparent border-none outline-none text-xs w-full py-1 text-primary"
                 placeholder="football, premier league..."
                 value={formData.keywords}
-                onChange={e => setFormData({...formData, keywords: e.target.value})}
+                onChange={e => updateField("keywords", e.target.value)}
               />
             </div>
           </div>

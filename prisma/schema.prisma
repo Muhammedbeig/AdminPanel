@@ -164,3 +164,51 @@ model WebSetting {
 
   updatedAt         DateTime @updatedAt
 }
+
+model Media {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  folderId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  folder    MediaFolder? @relation(fields: [folderId], references: [id])
+
+  @@index([folderId])
+}
+
+model MediaFolder {
+  id        Int      @id @default(autoincrement())
+  name      String
+  parentId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent    MediaFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  MediaFolder[] @relation("FolderHierarchy")
+  files     Media[]
+}
+
+model FAQCategory {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  faqs      FAQ[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FAQ {
+  id          Int          @id @default(autoincrement())
+  question    String
+  answer      String       @db.Text
+  isPublished Boolean      @default(true)
+  order       Int          @default(0)
+  categoryId  Int?
+  category    FAQCategory? @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
