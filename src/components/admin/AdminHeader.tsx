@@ -24,26 +24,25 @@ export default function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => vo
     : "text-white/90 hover:bg-white/10 hover:text-white";
 
   // ✅ New State for Dynamic Branding
-  // We initialize with defaults to prevent layout shifts
   const [config, setConfig] = useState({ 
     siteName: "LiveSocceRR Admin", 
-    logo: "" 
+    logo: "" // Changed from logoUrl to logo
   });
   const [loadingConfig, setLoadingConfig] = useState(true);
 
-  // ✅ Fetch from the NEW Settings API
   useEffect(() => {
+    // ✅ FIX: Use the correct settings API
     fetch("/api/admin/settings")
       .then((res) => res.json())
       .then((j) => {
         if (j.ok && j.settings) {
           setConfig({
             siteName: j.settings.siteName || "LiveSocceRR Admin",
-            logo: j.settings.logo || "", // Note: API returns 'logo', not 'logoUrl'
+            logo: j.settings.logo || "", // ✅ FIX: Use 'logo' column
           });
         }
       })
-      .catch((err) => console.error("Header config load failed", err))
+      .catch((err) => console.error("Header config error:", err))
       .finally(() => setLoadingConfig(false));
   }, []);
 

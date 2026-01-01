@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Save, Image as ImageIcon, Globe, FileText, ArrowLeft, 
-  Settings, Bold, Italic, Underline, List, Link as LinkIcon, 
-  Heading1, Heading2, Heading3, Quote, Code, 
-  LayoutList, Undo, Redo, AlignLeft, AlignCenter, AlignRight
+  LayoutList
 } from "lucide-react";
+// ✅ IMPORT THE NEW COMPONENT
+import RichTextEditor from "@/components/ui/RichTextEditor";
 
 type EditorProps = {
   post?: any;
@@ -30,10 +30,6 @@ export default function BlogEditor({ post }: EditorProps) {
     metaTitle: post?.metaTitle || "",
     metaDescription: post?.metaDescription || "",
     keywords: post?.keywords || "",
-    ogTitle: post?.ogTitle || "",
-    ogDescription: post?.ogDescription || "",
-    ogImage: post?.ogImage || "",
-    canonicalUrl: post?.canonicalUrl || "",
     isIndexable: post?.isIndexable ?? true,
     isPublished: post?.isPublished || false,
   });
@@ -59,7 +55,6 @@ export default function BlogEditor({ post }: EditorProps) {
       title: val,
       slug: !post ? val.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "") : prev.slug,
       metaTitle: !post ? val : prev.metaTitle,
-      ogTitle: !post ? val : prev.ogTitle
     }));
   };
 
@@ -90,16 +85,13 @@ export default function BlogEditor({ post }: EditorProps) {
     }
   }
 
-  // Helper for Tab Classes (Fixed: Uses 'text-blue-600' for perfect Deep Blue)
+  // Tab Class Helper
   const getTabClass = (tab: string) => {
     const isActive = activeTab === tab;
     if (isActive) {
-      return "px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 " +
-             "bg-blue-50 text-blue-600 border-blue-600 " + 
-             "dark:bg-blue-500/10 dark:text-blue-500 dark:border-blue-500";
+      return "px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 bg-blue-50 text-blue-600 border-blue-600 dark:bg-blue-500/10 dark:text-blue-500 dark:border-blue-500";
     }
-    return "px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 " +
-           "border-transparent text-secondary hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5";
+    return "px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 border-transparent text-secondary hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5";
   };
 
   return (
@@ -114,7 +106,6 @@ export default function BlogEditor({ post }: EditorProps) {
            <div>
              <h1 className="text-xl font-black text-primary">{post ? "Edit Post" : "New Post"}</h1>
              <div className="flex items-center gap-3 text-xs font-mono mt-1">
-                {/* Word Count: Matches Deep Blue Active State */}
                 <span className="px-2 py-0.5 rounded font-bold bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500 border border-blue-200 dark:border-blue-900/30">
                   {wordCount} words
                 </span>
@@ -148,7 +139,6 @@ export default function BlogEditor({ post }: EditorProps) {
         {/* --- LEFT COLUMN: EDITOR --- */}
         <div className="lg:col-span-2 space-y-6">
            
-           {/* Title: Darker placeholder for visibility */}
            <input 
              className="w-full text-4xl font-black bg-transparent border-none outline-none text-primary placeholder:text-slate-500 dark:placeholder:text-slate-500 transition-colors"
              placeholder="Article Title Here..."
@@ -199,14 +189,16 @@ export default function BlogEditor({ post }: EditorProps) {
            {/* === TAB: RICH TEXT EDITOR === */}
            {activeTab === "content" && (
              <div className="animate-in fade-in space-y-4">
+                {/* ✅ USING NEW COMPONENT WITH FIXED HEIGHT & SCROLL */}
                 <RichTextEditor 
                   initialContent={formData.content} 
-                  onChange={(html) => setFormData({...formData, content: html})} 
+                  onChange={(html) => setFormData({...formData, content: html})}
+                  height="h-[700px]" // Tall enough for writing
                 />
              </div>
            )}
 
-           {/* === TAB: SEO === */}
+           {/* === TAB: SEO (Unchanged) === */}
            {activeTab === "seo" && (
              <div className="space-y-8 animate-in fade-in">
                 <div className="theme-bg theme-border border rounded-xl p-6">
@@ -248,10 +240,9 @@ export default function BlogEditor({ post }: EditorProps) {
              </div>
            )}
 
-           {/* === TAB: SCHEMA === */}
+           {/* === TAB: SCHEMA (Unchanged) === */}
            {activeTab === "schema" && (
              <div className="space-y-6 animate-in fade-in">
-                {/* Fixed: Dialogue Bar uses Deep Blue 'Selected Tab' colors */}
                 <div className="bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-500 dark:border-blue-500/30 p-4 rounded-xl">
                    <h3 className="font-bold text-sm mb-1">FAQ Schema Generator</h3>
                    <p className="text-xs opacity-80">
@@ -294,14 +285,11 @@ export default function BlogEditor({ post }: EditorProps) {
            )}
         </div>
 
-        {/* --- RIGHT: SETTINGS --- */}
+        {/* --- RIGHT: SETTINGS (Unchanged) --- */}
         <div className="space-y-6">
           <div className="theme-bg theme-border border rounded-xl p-4">
             <h3 className="text-xs font-black text-secondary uppercase tracking-widest mb-3">Featured Image</h3>
-            
-            {/* Fixed: Image Hover matches Active Tab (Deep Blue Border/Text) */}
             <div className="aspect-video bg-slate-100 dark:bg-white/5 rounded-lg border-2 border-dashed theme-border flex items-center justify-center relative overflow-hidden group transition-all hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10">
-              
               {formData.featuredImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={formData.featuredImage} alt="Cover" className="w-full h-full object-cover" />
@@ -353,131 +341,3 @@ export default function BlogEditor({ post }: EditorProps) {
     </div>
   );
 }
-
-// ==========================================
-// 🛠️ CUSTOM WYSIWYG EDITOR COMPONENT (FINAL FIX)
-// ==========================================
-function RichTextEditor({ initialContent, onChange }: { initialContent: string, onChange: (h: string) => void }) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [showCode, setShowCode] = useState(false);
-  const [html, setHtml] = useState(initialContent);
-  const [activeFormats, setActiveFormats] = useState<string[]>([]);
-
-  // 1. Initial Load Only (Prevents Backward Writing)
-  useEffect(() => {
-    if (editorRef.current && initialContent && !editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = initialContent;
-    }
-  }, []); 
-
-  // 2. Button Action
-  const exec = (command: string, value: string | undefined = undefined) => {
-    document.execCommand(command, false, value);
-    checkFormats(); 
-    if (editorRef.current) {
-      const newHtml = editorRef.current.innerHTML;
-      setHtml(newHtml);
-      onChange(newHtml);
-    }
-  };
-
-  const checkFormats = () => {
-    const formats = [];
-    if (document.queryCommandState("bold")) formats.push("bold");
-    if (document.queryCommandState("italic")) formats.push("italic");
-    if (document.queryCommandState("underline")) formats.push("underline");
-    if (document.queryCommandState("insertUnorderedList")) formats.push("ul");
-    if (document.queryCommandState("insertOrderedList")) formats.push("ol");
-    if (document.queryCommandValue("formatBlock") === "h2") formats.push("h2");
-    if (document.queryCommandValue("formatBlock") === "h3") formats.push("h3");
-    if (document.queryCommandValue("formatBlock") === "blockquote") formats.push("quote");
-    if (document.queryCommandState("justifyLeft")) formats.push("left");
-    if (document.queryCommandState("justifyCenter")) formats.push("center");
-    setActiveFormats(formats);
-  };
-
-  const isActive = (cmd: string) => activeFormats.includes(cmd);
-
-  return (
-    <div className="theme-bg theme-border border rounded-xl overflow-hidden flex flex-col h-[600px] shadow-sm">
-      
-      {/* TOOLBAR */}
-      <div className="bg-slate-50 dark:bg-white/5 border-b theme-border p-2 flex flex-wrap gap-1 items-center shrink-0">
-        <ToolButton onClick={() => exec("undo")} icon={Undo} tooltip="Undo" />
-        <ToolButton onClick={() => exec("redo")} icon={Redo} tooltip="Redo" />
-        <div className="w-px h-5 bg-slate-300 dark:bg-white/10 mx-1"></div>
-        
-        {/* Active State uses Solid Blue (bg-blue-600) to match main button */}
-        <ToolButton onClick={() => exec("bold")} icon={Bold} active={isActive("bold")} />
-        <ToolButton onClick={() => exec("italic")} icon={Italic} active={isActive("italic")} />
-        <ToolButton onClick={() => exec("underline")} icon={Underline} active={isActive("underline")} />
-        
-        <div className="w-px h-5 bg-slate-300 dark:bg-white/10 mx-1"></div>
-        
-        <ToolButton onClick={() => exec("formatBlock", "H2")} icon={Heading1} active={isActive("h2")} />
-        <ToolButton onClick={() => exec("formatBlock", "H3")} icon={Heading2} active={isActive("h3")} />
-        
-        <div className="w-px h-5 bg-slate-300 dark:bg-white/10 mx-1"></div>
-        
-        <ToolButton onClick={() => exec("insertUnorderedList")} icon={List} active={isActive("ul")} />
-        <ToolButton onClick={() => exec("insertOrderedList")} icon={LayoutList} active={isActive("ol")} />
-        
-        <div className="w-px h-5 bg-slate-300 dark:bg-white/10 mx-1"></div>
-
-        <ToolButton onClick={() => exec("justifyLeft")} icon={AlignLeft} active={isActive("left")} />
-        <ToolButton onClick={() => exec("justifyCenter")} icon={AlignCenter} active={isActive("center")} />
-
-        <div className="flex-1"></div>
-        <button 
-          onClick={() => setShowCode(!showCode)} 
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showCode ? "bg-blue-600 text-white" : "text-secondary hover:bg-slate-200 dark:hover:bg-white/10"}`}
-        >
-          <Code size={14} /> {showCode ? "Visual Editor" : "Edit HTML"}
-        </button>
-      </div>
-
-      {/* EDITOR AREA */}
-      <div className="flex-1 relative theme-bg">
-        {showCode ? (
-          <textarea 
-            className="w-full h-full p-6 font-mono text-xs leading-relaxed outline-none text-primary bg-transparent resize-none"
-            value={html}
-            onChange={(e) => {
-              setHtml(e.target.value);
-              onChange(e.target.value);
-            }}
-          />
-        ) : (
-          <div 
-            ref={editorRef}
-            contentEditable
-            onInput={(e) => {
-              const val = e.currentTarget.innerHTML;
-              onChange(val); 
-            }}
-            onKeyUp={checkFormats}
-            onMouseUp={checkFormats}
-            className="w-full h-full p-8 outline-none prose dark:prose-invert max-w-none overflow-y-auto text-primary"
-            style={{ minHeight: "100%" }}
-          />
-        )}
-      </div>
-
-    </div>
-  );
-}
-
-const ToolButton = ({ onClick, icon: Icon, active, tooltip }: any) => (
-  <button 
-    onClick={onClick} 
-    title={tooltip}
-    onMouseDown={(e) => e.preventDefault()}
-    className={`p-1.5 rounded-md transition-all ${
-      active 
-        ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
-        : "text-secondary hover:bg-slate-200 dark:hover:bg-white/10 hover:text-primary"
-    }`}
-  >
-    <Icon size={16} />
-  </button>
-);

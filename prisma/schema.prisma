@@ -136,3 +136,31 @@ model SystemSetting {
 
   updatedAt         DateTime @updatedAt
 }
+// --- ✅ NEW: WEB SETTINGS MODEL ---
+model WebSetting {
+  id                Int      @id @default(1)
+
+  // Visuals
+  themeColor        String   @default("#0f80da")
+  headerLogo        String?
+  footerLogo        String?
+  placeholderImage  String?
+
+  // Content
+  footerDescription String?  @db.Text
+  googleMapUrl      String?  @db.Text
+  
+  // Config
+  showLandingPage   Boolean  @default(true)
+  latitude          String?
+  longitude         String?
+
+  // Social Media
+  socialInstagram   String?
+  socialX           String?
+  socialFacebook    String?
+  socialLinkedin    String?
+  socialPinterest   String?
+
+  updatedAt         DateTime @updatedAt
+}
