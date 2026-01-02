@@ -87,7 +87,8 @@ export default function CategoriesPage() {
                   <th className="p-4 text-right">Posts</th>
                 </tr>
               </thead>
-              <tbody className="divide-y theme-border">
+              {/* ✅ REMOVED 'divide-y theme-border' to remove lines between rows */}
+              <tbody>
                 {loading ? (
                   <tr><td colSpan={3} className="p-8 text-center text-secondary">Loading...</td></tr>
                 ) : categories.length === 0 ? (

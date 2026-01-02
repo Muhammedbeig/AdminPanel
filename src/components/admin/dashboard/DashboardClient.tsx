@@ -141,7 +141,8 @@ export default function DashboardClient({ stats, recentUsers }: DashboardProps) 
                   <th className="p-4">Joined</th>
                 </tr>
               </thead>
-              <tbody className="divide-y theme-border">
+              {/* ✅ REMOVED 'divide-y theme-border' to remove lines */}
+              <tbody>
                 {recentUsers.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="p-8 text-center text-secondary text-sm">

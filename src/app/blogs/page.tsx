@@ -45,7 +45,8 @@ export default function AllBlogsPage() {
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y theme-border">
+            {/* ✅ REMOVED 'divide-y theme-border' to remove lines between rows */}
+            <tbody>
               {loading ? (
                 <tr><td colSpan={5} className="p-8 text-center text-secondary">Loading posts...</td></tr>
               ) : posts.length === 0 ? (

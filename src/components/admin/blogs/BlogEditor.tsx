@@ -246,8 +246,8 @@ export default function BlogEditor({ post }: EditorProps) {
               </div>
            </div>
 
-           {/* Tabs */}
-           <div className="flex items-center gap-1 border-b theme-border">
+           {/* Tabs - ✅ REMOVED 'border-b theme-border' here */}
+           <div className="flex items-center gap-1">
              <button onClick={() => setActiveTab("content")} className={getTabClass("content")}>
                <FileText size={16} /> Write Story
              </button>
