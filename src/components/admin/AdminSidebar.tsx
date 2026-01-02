@@ -15,8 +15,13 @@ import {
   PenTool, 
   Layers,
   Image as ImageIcon,
-  HelpCircle, // ✅ New Icon for FAQs
-  Tag         // ✅ New Icon for Categories
+  HelpCircle,
+  Tag,
+  // ✅ NEW ICONS IMPORTED
+  ArrowRightLeft, // Redirects
+  FileJson,       // Sitemap
+  Link2Off,       // Broken Links
+  Bot             // Robots.txt
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
@@ -114,7 +119,6 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
     { href: "/blogs/categories", label: "Categories", icon: <Layers size={16} /> },
   ];
 
-  // ✅ NEW: Knowledge Base Section (FAQs)
   const knowledgeBase: NavItem[] = [
     { href: "/faqs", label: "Manage FAQs", icon: <HelpCircle size={16} /> },
     { href: "/faqs/categories", label: "FAQ Categories", icon: <Tag size={16} /> },
@@ -125,6 +129,10 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
     { href: "/seo/match", label: "Match", icon: <Trophy size={16} />},
     { href: "/seo/player", label: "Player", icon: <User size={16} />},
     { href: "/seo/league", label: "League", icon: <Shield size={16} />},
+    { href: "/seo/redirects", label: "Redirects", icon: <ArrowRightLeft size={16} /> },
+    { href: "/seo/sitemap", label: "Sitemap", icon: <FileJson size={16} /> },
+    { href: "/seo/broken-links", label: "Broken Links", icon: <Link2Off size={16} /> },
+    { href: "/seo/robots", label: "Robots.txt", icon: <Bot size={16} /> },
   ];
 
   const pages: NavItem[] = [
@@ -140,39 +148,63 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
 
   return (
     <aside className="theme-bg theme-border border-r h-full flex flex-col">
-      <nav className="p-4 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+      {/* ✅ SCROLLBAR FIXED: 
+        1. Using .join(" ") ensures CSS classes are parsed correctly without comments interfering.
+        2. Added standard 'scrollbar-color' for non-webkit support (Firefox).
+        3. Webkit thumb explicitly set to blue-600.
+      */}
+      <nav className={[
+        "flex-1 overflow-y-auto p-4 space-y-6",
+        
+        // --- Webkit Scrollbar (Chrome/Safari/Edge) ---
+        "[&::-webkit-scrollbar]:w-1.5",
+        "[&::-webkit-scrollbar-track]:bg-transparent",
+        
+        // Light Mode: Blue Thumb
+        "[&::-webkit-scrollbar-thumb]:bg-blue-600",
+        "[&::-webkit-scrollbar-thumb]:rounded-full",
+        
+        // Dark Mode: Glassy White Thumb
+        "dark:[&::-webkit-scrollbar-thumb]:bg-white/10",
+        
+        // Hover Interaction
+        "hover:[&::-webkit-scrollbar-thumb]:bg-blue-700",
+        "dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/20",
+
+        // --- Standard Scrollbar (Firefox Support) ---
+        "[scrollbar-width:thin]",
+        // Light: Blue-600 thumb (#2563eb), Transparent track
+        "[scrollbar-color:#2563eb_transparent]",
+        // Dark: White/10 thumb, Transparent track
+        "dark:[scrollbar-color:rgba(255,255,255,0.1)_transparent]"
+      ].join(" ")}>
         
         <Section title="Main" items={main} />
 
-        {/* Blog Manager */}
         <Section 
           title="Blog Manager" 
           items={blogManager} 
           allowedRoles={["CONTENT_WRITER", "EDITOR", "SEO_MANAGER", "ADMIN", "DEVELOPER"]} 
         />
 
-        {/* ✅ Knowledge Base (FAQs) */}
         <Section 
           title="Knowledge Base" 
           items={knowledgeBase} 
           allowedRoles={["CONTENT_WRITER", "EDITOR", "ADMIN", "DEVELOPER"]} 
         />
         
-        {/* SEO Manager */}
         <Section 
           title="SEO Manager" 
           items={seoManager} 
           allowedRoles={["SEO_MANAGER", "EDITOR", "ADMIN", "DEVELOPER"]} 
         />
         
-        {/* Content Pages */}
         <Section 
           title="Content Pages" 
           items={pages} 
           allowedRoles={["SEO_MANAGER", "EDITOR", "CONTENT_WRITER", "ADMIN", "DEVELOPER"]} 
         />
         
-        {/* Admin Settings */}
         <Section 
           title="Admin" 
           items={admin} 

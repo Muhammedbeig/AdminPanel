@@ -215,3 +215,19 @@ model FAQ {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
+
+model SitemapLink {
+  id        Int      @id @default(autoincrement())
+  path      String   @unique // e.g. "/landing-page"
+  priority  Float    @default(0.5) // 0.0 to 1.0
+  frequency String   @default("weekly") // "daily", "weekly", "monthly"
+  updatedAt DateTime @updatedAt
+}
+
+model SitemapSettings {
+  id              Int     @id @default(autoincrement())
+  homePriority    Float   @default(1.0)
+  postPriority    Float   @default(0.9)
+  pagePriority    Float   @default(0.8) // For Categories & Static pages
+  updatedAt       DateTime @updatedAt
+}
