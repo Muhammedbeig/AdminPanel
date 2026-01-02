@@ -75,9 +75,10 @@ export default function FAQCategoriesPage() {
                 <th className="p-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y theme-border">
+            {/* ✅ REMOVED 'divide-y theme-border' to remove lines between rows */}
+            <tbody>
               {categories.map(c => (
-                <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-white/5">
+                <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                   <td className="p-4 font-bold text-primary">{c.name}</td>
                   <td className="p-4 text-xs text-secondary font-mono">{c.slug}</td>
                   <td className="p-4 text-xs text-primary font-bold bg-slate-100 dark:bg-white/10 rounded w-fit px-2">{c._count.faqs} items</td>

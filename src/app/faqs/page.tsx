@@ -62,7 +62,6 @@ export default function FAQListPage() {
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3 top-2.5 text-secondary" />
           
-          {/* ✅ FIXED: Fully Dynamic Search Input */}
           <input 
             className="w-full pl-9 pr-4 py-2 rounded-lg 
                        bg-slate-100 dark:bg-white/5 
@@ -88,7 +87,8 @@ export default function FAQListPage() {
               <th className="p-4 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y theme-border">
+          {/* ✅ REMOVED 'divide-y theme-border' to remove lines between rows */}
+          <tbody>
             {loading ? (
               <tr><td colSpan={4} className="p-8 text-center text-secondary">Loading...</td></tr>
             ) : faqs.length === 0 ? (

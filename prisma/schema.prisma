@@ -88,6 +88,9 @@ model BlogPost {
   excerpt       String?  @db.Text
   content       String   @db.LongText // Rich HTML content
   featuredImage String?
+
+  isFeatured      Boolean   @default(false)
+  deletedAt       DateTime?  // Used for "Soft Delete" / Trash bin
   
   // Organization
   categoryId    Int?

@@ -11,32 +11,41 @@ export async function GET(req: Request) {
   if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
+  const includeTrash = searchParams.get("includeTrash") === "true";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = 20;
   const skip = (page - 1) * limit;
 
-  // Fetch posts with Author and Category info
-  const [posts, total] = await Promise.all([
-    prisma.blogPost.findMany({
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        author: { select: { email: true, name: true, image: true } },
-        category: true,
-      },
-    }),
-    prisma.blogPost.count(),
-  ]);
+  // ✅ LOGIC: If includeTrash is true, fetch EVERYTHING. 
+  // If false (default), only fetch items where deletedAt is null.
+  const whereCondition = includeTrash ? {} : { deletedAt: null };
 
-  return NextResponse.json({ ok: true, posts, total, page, pages: Math.ceil(total / limit) });
+  try {
+    const [posts, total] = await Promise.all([
+      prisma.blogPost.findMany({
+        where: whereCondition,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          author: { select: { email: true, name: true, image: true } },
+          category: true,
+        },
+      }),
+      prisma.blogPost.count({ where: whereCondition }),
+    ]);
+
+    return NextResponse.json({ ok: true, posts, total, page, pages: Math.ceil(total / limit) });
+  } catch (error) {
+    console.error("GET Blogs Error:", error);
+    return NextResponse.json({ ok: false, error: "Failed to load posts" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
   const auth = await requireRole(ALLOWED);
   if (!auth.ok) return auth.response;
 
-  // Get current user ID to set as Author
   const session = await getSession();
   if (!session) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
@@ -59,9 +68,13 @@ export async function POST(req: Request) {
         keywords: body.keywords,
         
         // Author
-        authorId: session.id, // ✅ Auto-linked to current user
+        authorId: session.id, // Auto-linked to current user
         isPublished: body.isPublished || false,
         publishedAt: body.isPublished ? new Date() : null,
+        
+        // ✅ NEW FIELDS (Must match schema.prisma)
+        isFeatured: body.isFeatured || false,
+        deletedAt: null,
       },
     });
 
