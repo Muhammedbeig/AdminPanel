@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { 
   Plus, Search, Edit2, Trash2, HelpCircle, 
-  CheckCircle2, XCircle, Tag 
+  CheckCircle2, XCircle, Tag, Globe 
 } from "lucide-react";
 
 export default function FAQListPage() {
@@ -22,16 +22,12 @@ export default function FAQListPage() {
       });
   };
 
-  useEffect(() => {
-    fetchFaqs();
-  }, [search]);
+  useEffect(() => { fetchFaqs(); }, [search]);
 
   const handleDelete = async (id: number) => {
     if(!confirm("Delete this FAQ?")) return;
     await fetch("/api/admin/faqs", { 
-      method: "DELETE", 
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }) 
+      method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) 
     });
     fetchFaqs();
   };
@@ -61,14 +57,8 @@ export default function FAQListPage() {
       <div className="theme-bg theme-border border rounded-xl p-4 flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3 top-2.5 text-secondary" />
-          
           <input 
-            className="w-full pl-9 pr-4 py-2 rounded-lg 
-                       bg-slate-100 dark:bg-white/5 
-                       border border-transparent focus:border-blue-500 
-                       text-primary placeholder:text-secondary 
-                       focus:ring-2 focus:ring-blue-500/20 
-                       outline-none text-sm font-medium transition-all"
+            className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-transparent focus:border-blue-500 text-primary placeholder:text-secondary focus:ring-2 focus:ring-blue-500/20 outline-none text-sm font-medium transition-all"
             placeholder="Search questions..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -82,34 +72,36 @@ export default function FAQListPage() {
           <thead className="bg-slate-50 dark:bg-white/5 border-b theme-border text-xs font-black text-secondary uppercase tracking-widest">
             <tr>
               <th className="p-4">Question</th>
+              <th className="p-4">URL Slug</th>
               <th className="p-4">Category</th>
               <th className="p-4">Status</th>
               <th className="p-4 text-right">Actions</th>
             </tr>
           </thead>
-          {/* ✅ REMOVED 'divide-y theme-border' to remove lines between rows */}
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="p-8 text-center text-secondary">Loading...</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-secondary">Loading...</td></tr>
             ) : faqs.length === 0 ? (
-              <tr><td colSpan={4} className="p-8 text-center text-secondary">No FAQs found.</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-secondary">No FAQs found.</td></tr>
             ) : (
               faqs.map(faq => (
                 <tr key={faq.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                  <td className="p-4 font-bold text-primary text-sm">{faq.question}</td>
+                  
+                  {/* ✅ URL Display Column */}
                   <td className="p-4">
-                    <div className="font-bold text-primary text-sm">{faq.question}</div>
-                    <div className="text-xs text-secondary line-clamp-1 mt-0.5 opacity-60">
-                      {faq.answer.replace(/<[^>]*>/g, '')}
+                    <div className="flex items-center gap-1.5 text-xs font-mono text-secondary bg-slate-100 dark:bg-white/10 px-2 py-1 rounded w-fit">
+                      <span className="opacity-50">/</span>
+                      {faq.slug}
                     </div>
                   </td>
+
                   <td className="p-4">
                     {faq.category ? (
                       <span className="px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase">
                         {faq.category.name}
                       </span>
-                    ) : (
-                      <span className="text-secondary text-xs">-</span>
-                    )}
+                    ) : <span className="text-secondary text-xs">-</span>}
                   </td>
                   <td className="p-4">
                     {faq.isPublished ? (

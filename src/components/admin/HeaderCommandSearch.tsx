@@ -6,7 +6,8 @@ import {
   Search, LayoutDashboard, Image as ImageIcon,
   PenTool, FileText, Command, Globe, Shield, User,
   Sun, Moon, Settings, LogOut, ArrowRight,
-  HelpCircle, Tag, Sliders, Monitor, PlusCircle // ✅ Imported here
+  HelpCircle, Tag, Sliders, Monitor, PlusCircle,
+  Link2Off, ArrowRightLeft, FileJson, Bot
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
@@ -30,23 +31,32 @@ export default function HeaderCommandSearch() {
 
     // --- KNOWLEDGE BASE (FAQs) ---
     { category: "Knowledge Base", label: "Manage FAQs", icon: HelpCircle, action: () => router.push("/faqs") },
-    { category: "Knowledge Base", label: "FAQ Categories", icon: Tag, action: () => router.push("/faqs/categories") },
     { category: "Knowledge Base", label: "Add New FAQ", icon: PlusCircle, action: () => router.push("/faqs/new") }, 
+    { category: "Knowledge Base", label: "FAQ Categories", icon: Tag, action: () => router.push("/faqs/categories") },
 
     // --- BLOG ---
     { category: "Blog", label: "All Posts", icon: PenTool, action: () => router.push("/blogs") },
     { category: "Blog", label: "Write New Post", icon: FileText, action: () => router.push("/blogs/new") },
     { category: "Blog", label: "Categories", icon: Command, action: () => router.push("/blogs/categories") },
 
-    // --- SEO ---
+    // --- SEO MANAGER (Updated) ---
     { category: "SEO", label: "Global SEO", icon: Globe, action: () => router.push("/seo/global") },
     { category: "SEO", label: "League SEO", icon: Shield, action: () => router.push("/seo/league") },
     { category: "SEO", label: "Player SEO", icon: User, action: () => router.push("/seo/player") },
+    { category: "SEO", label: "Redirect Manager", icon: ArrowRightLeft, action: () => router.push("/seo/redirects") },
+    { category: "SEO", label: "Sitemap Manager", icon: FileJson, action: () => router.push("/seo/sitemap") },
+    { category: "SEO", label: "Broken Link Checker", icon: Link2Off, action: () => router.push("/seo/broken-links") },
+    { category: "SEO", label: "Robots.txt Editor", icon: Bot, action: () => router.push("/seo/robots") },
 
     // --- SETTINGS (System & Web) ---
     { category: "Settings", label: "System Settings", icon: Sliders, action: () => router.push("/settings/system") },
     { category: "Settings", label: "Web Settings", icon: Monitor, action: () => router.push("/settings/web") },
     { category: "Settings", label: "Profile Settings", icon: Settings, action: () => router.push("/profile") },
+    
+    // --- CONTENT PAGES (Static) ---
+    { category: "Pages", label: "Edit Privacy Policy", icon: FileText, action: () => router.push("/seo/pages/privacy") },
+    { category: "Pages", label: "Edit Terms of Service", icon: FileText, action: () => router.push("/seo/pages/terms") },
+    { category: "Pages", label: "Edit Contact Page", icon: FileText, action: () => router.push("/seo/pages/contact") },
 
     // --- SYSTEM ---
     { category: "System", label: "Toggle Theme", icon: theme === "dark" ? Sun : Moon, action: () => setTheme(theme === "dark" ? "light" : "dark") },

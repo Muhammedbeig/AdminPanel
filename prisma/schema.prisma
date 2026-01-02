@@ -136,7 +136,7 @@ model SystemSetting {
   timezone          String   @default("UTC")
   maintenanceMode   Boolean  @default(false)
   googleAnalyticsId String?
-
+  envVariables      Json?     @default("[]")
   updatedAt         DateTime @updatedAt
 }
 // --- ✅ NEW: WEB SETTINGS MODEL ---
@@ -207,6 +207,7 @@ model FAQCategory {
 model FAQ {
   id          Int          @id @default(autoincrement())
   question    String
+  slug        String       @unique
   answer      String       @db.Text
   isPublished Boolean      @default(true)
   order       Int          @default(0)
@@ -230,4 +231,29 @@ model SitemapSettings {
   postPriority    Float   @default(0.9)
   pagePriority    Float   @default(0.8) // For Categories & Static pages
   updatedAt       DateTime @updatedAt
+}
+
+model BrokenLink {
+  id          Int      @id @default(autoincrement())
+  linkUrl     String   // The external or internal link that is broken
+  sourceSlug  String   // The slug of the blog post where this link was found
+  sourceTitle String   // Title of the blog post
+  statusCode  Int      // e.g., 404, 500
+  checkedAt   DateTime @default(now())
+}
+
+model Redirect {
+  id          Int      @id @default(autoincrement())
+  source      String   @unique // e.g., "/old-page"
+  destination String   // e.g., "/new-page"
+  type        Int      @default(301) // 301, 302, 307, 308, 410, 451
+  isActive    Boolean  @default(true)
+  hits        Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+model RobotsTxt {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text // Stores the full raw text (e.g., "User-agent: *...")
+  updatedAt DateTime @updatedAt
 }
