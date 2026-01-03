@@ -79,6 +79,18 @@ model BlogCategory {
   posts     BlogPost[]
 }
 
+model BlogTag {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique // Case-insensitive enforced in API
+  slug        String     @unique
+  description String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relation to Posts
+  posts       BlogPost[]
+}
+
 model BlogPost {
   id            Int      @id @default(autoincrement())
   
@@ -99,7 +111,7 @@ model BlogPost {
   // SEO Fields (Matches your guidelines)
   metaTitle       String?
   metaDescription String? @db.Text
-  keywords        String? // Comma-separated
+  tags        BlogTag[]
   
   // Advanced SEO Overrides
   ogTitle       String?
@@ -256,4 +268,20 @@ model RobotsTxt {
   id        Int      @id @default(autoincrement())
   content   String   @db.Text // Stores the full raw text (e.g., "User-agent: *...")
   updatedAt DateTime @updatedAt
+}
+
+// Add this model to your schema
+model Page {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  
+  // SEO Fields
+  metaTitle       String?
+  metaDescription String? @db.Text
+  
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -5,6 +5,16 @@ import { Role } from "@prisma/client";
 
 const ALLOWED = [Role.ADMIN, Role.EDITOR, Role.SEO_MANAGER, Role.CONTENT_WRITER];
 
+// ✅ Slugify Helper (Strict)
+const slugify = (text: string) => 
+  text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')        // Replace spaces with -
+    .replace(/[^\w\-]+/g, '')    // Remove all non-word chars
+    .replace(/\-\-+/g, '-');     // Replace multiple - with single -
+
 // 1. GET Single Post
 export async function GET(
   req: Request, 
@@ -14,13 +24,17 @@ export async function GET(
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
-  
+
   const post = await prisma.blogPost.findUnique({
     where: { id: parseInt(id) },
-    include: { category: true },
+    include: { 
+      category: true,
+      tags: true // ✅ Fetch tags for editor
+    },
   });
 
   if (!post) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  
   return NextResponse.json({ ok: true, post });
 }
 
@@ -36,27 +50,44 @@ export async function PUT(
   const body = await req.json();
 
   try {
+    // ✅ Logic: Respect provided date, or auto-set if publishing without date
+    let publishedAt = undefined;
+    if (body.publishedAt !== undefined) {
+       publishedAt = body.publishedAt ? new Date(body.publishedAt) : null;
+    } else if (body.isPublished === true) {
+       // If toggling publish to TRUE without sending a date, use NOW (optional logic)
+    }
+
     const updated = await prisma.blogPost.update({
       where: { id: parseInt(id) },
       data: {
         title: body.title,
-        slug: body.slug,
+        
+        // ✅ Enforce strict slug (only update if provided)
+        slug: body.slug ? slugify(body.slug) : undefined,
+        
         excerpt: body.excerpt,
         content: body.content,
         featuredImage: body.featuredImage,
         categoryId: body.categoryId ? parseInt(body.categoryId) : null,
+        
+        // SEO (Keywords removed)
         metaTitle: body.metaTitle,
         metaDescription: body.metaDescription,
-        keywords: body.keywords,
-        isPublished: body.isPublished,
-        // Only update publishedAt if explicitly publishing
-        ...(body.isPublished ? { publishedAt: new Date() } : {}),
         
-        // ✅ New fields update
+        isPublished: body.isPublished,
+        // ✅ Only update if field is sent (undefined check)
+        ...(publishedAt !== undefined ? { publishedAt } : {}),
+        
         isFeatured: body.isFeatured,
-        // (We don't update deletedAt here, that's for DELETE/Restore)
+
+        // ✅ Update Tags (Set replaces old list with new list)
+        tags: {
+          set: body.tags?.map((id: number) => ({ id })) || []
+        }
       },
     });
+
     return NextResponse.json({ ok: true, post: updated });
   } catch (e) {
     console.error("Update Error:", e);

@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Save, Image as ImageIcon, Globe, FileText, ArrowLeft, 
   LayoutList, CheckCircle2, RotateCcw, Calendar, Copy, Trash2, Eye, Star,
-  ChevronDown // ✅ Added ChevronDown
+  ChevronDown, Hash, X, Plus, Loader2
 } from "lucide-react";
-// ✅ IMPORT THE ADVANCED EDITOR
 import RichTextEditor from "@/components/ui/RichTextEditor";
 
 type EditorProps = {
@@ -18,10 +17,19 @@ type FAQ = { question: string; answer: string };
 
 const AUTO_SAVE_KEY = "blog_editor_draft_v1";
 
-// ✅ Helper to clean verbose citation tags from DB data
 const cleanName = (name: string) => {
   if (!name) return "";
   return name.replace(/\[cite_start\]/g, "").replace(/\[cite.*?\]/g, "").trim();
+};
+
+const slugify = (text: string) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')        
+    .replace(/[^\w\-]+/g, '')    
+    .replace(/\-\-+/g, '-');     
 };
 
 export default function BlogEditor({ post }: EditorProps) {
@@ -34,19 +42,27 @@ export default function BlogEditor({ post }: EditorProps) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
 
-  // ✅ FIX: Stable content state to prevent Editor cursor jumping
-  const [editorInitialContent, setEditorInitialContent] = useState(post?.content || "");
+  // Tags State
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>(post?.tags?.map((t:any) => t.id) || []);
+  
+  // Tag Creation State
+  const [tagInput, setTagInput] = useState("");
+  const [isProcessingTags, setIsProcessingTags] = useState(false);
+  const [showTagMenu, setShowTagMenu] = useState(false);
+  const tagMenuRef = useRef<HTMLDivElement>(null);
 
+  const [editorInitialContent, setEditorInitialContent] = useState(post?.content || "");
+  
   const [formData, setFormData] = useState({
     title: post?.title || "",
-    slug: post?.slug || "",
+    slug: post?.slug ? slugify(post.slug) : "",
     content: post?.content || "", 
     excerpt: post?.excerpt || "",
     categoryId: post?.categoryId || "",
     featuredImage: post?.featuredImage || "",
     metaTitle: post?.metaTitle || "",
     metaDescription: post?.metaDescription || "",
-    keywords: post?.keywords || "",
     isIndexable: post?.isIndexable ?? true,
     isPublished: post?.isPublished || false,
     publishedAt: post?.publishedAt ? new Date(post.publishedAt).toISOString().slice(0, 16) : "", 
@@ -55,28 +71,25 @@ export default function BlogEditor({ post }: EditorProps) {
 
   const [faqs, setFaqs] = useState<FAQ[]>(post?.faqs || []);
   const [activeTab, setActiveTab] = useState<"content" | "seo" | "schema">("content");
-  
+
   const wordCount = (formData.content || "").replace(/<[^>]*>/g, '').split(/\s+/g).filter(Boolean).length;
   const readingTime = Math.ceil(wordCount / 200);
 
-  // --- 1. LOAD DRAFT ON MOUNT ---
+  // --- 1. LOAD DATA ---
   useEffect(() => {
-    // Load Categories
-    fetch("/api/admin/blogs/categories")
-      .then(res => res.json())
-      .then(data => { if(data.ok) setCategories(data.categories) });
+    fetch("/api/admin/blogs/categories").then(r => r.json()).then(d => { if(d.ok) setCategories(d.categories) });
+    fetch("/api/admin/blogs/tags").then(r => r.json()).then(d => { if(d.ok) setAvailableTags(d.tags) });
 
-    // Draft Logic
     if (!post) {
       const saved = localStorage.getItem(AUTO_SAVE_KEY);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (parsed.formData.title || parsed.formData.content) {
-            if (confirm("Found an unsaved draft from your last session. Restore it?")) {
+            if (confirm("Found an unsaved draft. Restore it?")) {
               setFormData(parsed.formData);
-              setFaqs(parsed.faqs);
-              // ✅ FIX: Update the stable editor content only once on restore
+              setFaqs(parsed.faqs || []);
+              if(parsed.selectedTagIds) setSelectedTagIds(parsed.selectedTagIds);
               setEditorInitialContent(parsed.formData.content);
               setDraftRestored(true);
               setLastSaved(new Date());
@@ -84,23 +97,32 @@ export default function BlogEditor({ post }: EditorProps) {
               localStorage.removeItem(AUTO_SAVE_KEY);
             }
           }
-        } catch (e) {
-          console.error("Failed to parse draft", e);
-        }
+        } catch (e) {}
       }
     }
   }, []);
 
-  // --- 2. AUTO-SAVE TIMER ---
+  // --- 2. AUTO-SAVE ---
   useEffect(() => {
     if (!hasUnsavedChanges) return;
     const timer = setTimeout(() => {
-      localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify({ formData, faqs }));
+      localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify({ formData, faqs, selectedTagIds }));
       setLastSaved(new Date());
       setHasUnsavedChanges(false);
     }, 3000); 
     return () => clearTimeout(timer);
-  }, [formData, faqs, hasUnsavedChanges]);
+  }, [formData, faqs, selectedTagIds, hasUnsavedChanges]);
+
+  // Click outside listener for tags
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tagMenuRef.current && !tagMenuRef.current.contains(event.target as Node)) {
+        setShowTagMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -109,25 +131,90 @@ export default function BlogEditor({ post }: EditorProps) {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    const newSlug = !post ? val.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "") : formData.slug;
-    
-    setFormData(prev => ({
-      ...prev,
-      title: val,
-      slug: newSlug,
-      metaTitle: !post ? val : prev.metaTitle,
-    }));
+    const newSlug = !post ? slugify(val) : formData.slug;
+    setFormData(prev => ({ ...prev, title: val, slug: newSlug, metaTitle: !post ? val : prev.metaTitle }));
     setHasUnsavedChanges(true);
   };
+
+  // --- ✅ NEW TAG LOGIC (Enter & Comma Support) ---
+  
+  const processTags = async (input: string) => {
+    if (!input.trim()) return;
+    
+    // Split by comma, trim spaces, remove empty
+    const rawTags = input.split(",").map(t => t.trim()).filter(Boolean);
+    if (rawTags.length === 0) return;
+
+    setIsProcessingTags(true);
+    
+    const newIds = [...selectedTagIds];
+    const newAvailable = [...availableTags];
+    let changed = false;
+
+    // Process each tag sequentially to maintain order and state
+    for (const tagName of rawTags) {
+      // 1. Check if tag exists (Case-insensitive check)
+      const existingTag = newAvailable.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+
+      if (existingTag) {
+        if (!newIds.includes(existingTag.id)) {
+          newIds.push(existingTag.id);
+          changed = true;
+        }
+      } else {
+        // 2. Create New Tag
+        try {
+          const res = await fetch("/api/admin/blogs/tags", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: tagName })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            newAvailable.push(data.tag);
+            newIds.push(data.tag.id);
+            changed = true;
+          }
+        } catch (e) {
+          console.error("Failed to create tag:", tagName);
+        }
+      }
+    }
+
+    if (changed) {
+      setAvailableTags(newAvailable);
+      setSelectedTagIds(newIds);
+      setHasUnsavedChanges(true);
+    }
+    
+    setTagInput("");
+    setIsProcessingTags(false);
+    setShowTagMenu(false);
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      processTags(tagInput);
+    }
+  };
+
+  const filteredTags = availableTags.filter(t => 
+    t.name.toLowerCase().includes(tagInput.toLowerCase()) && 
+    !selectedTagIds.includes(t.id)
+  );
 
   // --- ACTIONS ---
   async function handleSave() {
     setLoading(true);
     const url = post ? `/api/admin/blogs/${post.id}` : "/api/admin/blogs";
     const method = post ? "PUT" : "POST";
+
     const payload = { 
       ...formData, 
+      slug: slugify(formData.slug),
       faqs,
+      tags: selectedTagIds,
       publishedAt: formData.publishedAt ? new Date(formData.publishedAt).toISOString() : null
     };
 
@@ -182,7 +269,8 @@ export default function BlogEditor({ post }: EditorProps) {
 
   const selectedCat = categories.find(c => c.id.toString() === formData.categoryId.toString());
   const categorySlug = selectedCat ? cleanName(selectedCat.slug) : "uncategorized";
-  const previewUrl = `/blog/${categorySlug}/${formData.slug || "post-url"}`;
+  const cleanSlug = slugify(formData.slug || "post-url"); 
+  const previewUrl = `/blog/${slugify(categorySlug)}/${cleanSlug}`;
 
   const getTabClass = (tab: string) => {
     const isActive = activeTab === tab;
@@ -286,16 +374,15 @@ export default function BlogEditor({ post }: EditorProps) {
            <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 flex items-center gap-2 text-xs text-secondary font-mono theme-bg theme-border border rounded-lg px-3 py-2">
                 <Globe size={12} />
-                <span className="opacity-50 shrink-0">/blog/{selectedCat ? selectedCat.slug : "..."}/</span>
+                <span className="opacity-50 shrink-0">/blog/{slugify(categorySlug)}/</span>
                 <input 
                   className="bg-transparent outline-none text-blue-600 dark:text-blue-500 font-bold w-full"
                   value={formData.slug}
-                  onChange={e => updateField("slug", e.target.value)}
+                  onChange={e => updateField("slug", slugify(e.target.value))}
                   placeholder="post-url-slug"
                 />
               </div>
               
-              {/* ✅ FIXED: Custom Dropdown Style with ChevronDown (Matches your request perfectly) */}
               <div className="relative w-full md:w-48 group">
                 <select 
                   className="w-full appearance-none theme-bg theme-border border rounded-lg px-3 py-2 text-xs font-bold text-primary outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
@@ -311,7 +398,6 @@ export default function BlogEditor({ post }: EditorProps) {
                 </select>
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none group-hover:text-primary transition-colors" />
               </div>
-
            </div>
 
            {/* Tabs */}
@@ -346,7 +432,7 @@ export default function BlogEditor({ post }: EditorProps) {
                   <div className="bg-white p-4 rounded-lg border border-slate-200 max-w-xl shadow-sm">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px]">⚽</div>
-                      <div className="text-xs text-slate-700">yoursite.com › blog › {categorySlug} › {formData.slug || "post-url"}</div>
+                      <div className="text-xs text-slate-700">yoursite.com › blog › {categorySlug} › {cleanSlug}</div>
                     </div>
                     <div className="text-[#1a0dab] text-xl hover:underline cursor-pointer font-medium mb-1 truncate">
                       {formData.metaTitle || formData.title || "Your Blog Title"}
@@ -395,7 +481,7 @@ export default function BlogEditor({ post }: EditorProps) {
         <div className="space-y-6">
           <div className="theme-bg theme-border border rounded-xl p-4">
             <h3 className="text-xs font-black text-secondary uppercase tracking-widest mb-3 flex items-center gap-2">
-               <Calendar size={14} /> Schedule Publish
+                <Calendar size={14} /> Schedule Publish
             </h3>
             <input type="datetime-local" className="w-full px-3 py-2 rounded-lg theme-bg theme-border border text-sm text-primary outline-none focus:ring-2 focus:ring-blue-500/50" value={formData.publishedAt} onChange={e => updateField("publishedAt", e.target.value)} />
             <p className="text-[10px] text-secondary mt-2 opacity-70">Leave empty to publish immediately.</p>
@@ -431,9 +517,81 @@ export default function BlogEditor({ post }: EditorProps) {
             <h3 className="text-xs font-black text-secondary uppercase tracking-widest mb-3">Excerpt</h3>
             <textarea className="w-full px-3 py-2 rounded-lg theme-bg theme-border border text-sm text-primary outline-none h-32 resize-none placeholder:text-slate-500 dark:placeholder:text-slate-500" placeholder="Summary..." value={formData.excerpt} onChange={e => updateField("excerpt", e.target.value)} />
           </div>
-          <div className="theme-bg theme-border border rounded-xl p-4">
-            <h3 className="text-xs font-black text-secondary uppercase tracking-widest mb-3">Keywords</h3>
-            <input className="w-full px-3 py-2 rounded-lg theme-bg theme-border border text-sm text-primary placeholder:text-slate-500 dark:placeholder:text-slate-500" placeholder="#football, #scores..." value={formData.keywords} onChange={e => updateField("keywords", e.target.value)} />
+
+          {/* ✅ UPDATED TAGS SECTION: Search + Enter/Comma Create */}
+          <div className="theme-bg theme-border border rounded-xl p-4" ref={tagMenuRef}>
+            <h3 className="text-xs font-black text-secondary uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Hash size={14} /> Tags
+            </h3>
+            
+            {/* Selected Tags */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {selectedTagIds.map(id => {
+                const tag = availableTags.find(t => t.id === id);
+                if(!tag) return null;
+                return (
+                  <span key={id} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 text-xs font-bold animate-in zoom-in-90">
+                    {tag.name}
+                    <button onClick={() => {
+                       const newIds = selectedTagIds.filter(tid => tid !== id);
+                       setSelectedTagIds(newIds);
+                       setHasUnsavedChanges(true);
+                    }} className="hover:text-red-500"><X size={12} /></button>
+                  </span>
+                );
+              })}
+              {selectedTagIds.length === 0 && <span className="text-xs text-secondary opacity-50 italic">No tags selected</span>}
+            </div>
+
+            {/* Input & Dropdown */}
+            <div className="relative">
+              <input 
+                className="w-full px-3 py-2 rounded-lg theme-bg theme-border border text-sm text-primary outline-none focus:ring-2 focus:ring-blue-500/50"
+                placeholder="Search or Create Tag (press Enter/Comma)..."
+                value={tagInput}
+                onChange={(e) => {
+                  setTagInput(e.target.value);
+                  setShowTagMenu(true);
+                }}
+                onKeyDown={handleTagKeyDown}
+                onFocus={() => setShowTagMenu(true)}
+              />
+              
+              {/* Suggestions Menu */}
+              {showTagMenu && tagInput.trim() !== "" && (
+                <div className="absolute z-20 top-full left-0 right-0 mt-1 theme-bg theme-border border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                  
+                  {/* Create New Option */}
+                  {!filteredTags.some(t => t.name.toLowerCase() === tagInput.toLowerCase()) && (
+                    <button 
+                      onClick={() => processTags(tagInput)}
+                      disabled={isProcessingTags}
+                      className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 font-bold hover:bg-slate-50 dark:hover:bg-white/5 border-b theme-border flex items-center gap-2"
+                    >
+                      {isProcessingTags ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                      Create "{tagInput}"
+                    </button>
+                  )}
+
+                  {/* Filtered Suggestions */}
+                  {filteredTags.map(tag => (
+                    <button 
+                      key={tag.id}
+                      onClick={() => {
+                        processTags(tag.name); // Using processTags handles selection robustly
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-primary hover:bg-slate-50 dark:hover:bg-white/5"
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
+
+                  {filteredTags.length === 0 && tagInput && filteredTags.some(t => t.name.toLowerCase() === tagInput.toLowerCase()) && (
+                     <div className="px-3 py-2 text-xs text-secondary italic">Tag already added.</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
         </div>

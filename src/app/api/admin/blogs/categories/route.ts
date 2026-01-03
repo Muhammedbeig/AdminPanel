@@ -32,11 +32,9 @@ export async function POST(req: Request) {
   }
 }
 
-// ✅ ADDED: Rename Functionality
 export async function PUT(req: Request) {
   const auth = await requireRole(WRITE_ROLES);
   if (!auth.ok) return auth.response;
-
   try {
     const { id, name, slug } = await req.json();
     await prisma.blogCategory.update({
@@ -49,22 +47,27 @@ export async function PUT(req: Request) {
   }
 }
 
-// ✅ ADDED: Delete Functionality
+// ✅ UPDATED: Support Bulk Delete
 export async function DELETE(req: Request) {
   const auth = await requireRole(WRITE_ROLES);
   if (!auth.ok) return auth.response;
 
   try {
-    const { id } = await req.json();
-    
-    // Unlink posts first to prevent errors
+    const body = await req.json();
+    // Handle both single 'id' or multiple 'ids'
+    const ids = body.ids ? body.ids : (body.id ? [body.id] : []);
+
+    if (ids.length === 0) return NextResponse.json({ ok: false, error: "No IDs provided" }, { status: 400 });
+
+    // 1. Unlink posts first (Set categoryId to null for these posts)
     await prisma.blogPost.updateMany({
-        where: { categoryId: parseInt(id) },
+        where: { categoryId: { in: ids } },
         data: { categoryId: null }
     });
 
-    await prisma.blogCategory.delete({
-      where: { id: parseInt(id) },
+    // 2. Delete Categories
+    await prisma.blogCategory.deleteMany({
+      where: { id: { in: ids } },
     });
 
     return NextResponse.json({ ok: true });
