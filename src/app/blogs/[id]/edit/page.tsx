@@ -1,7 +1,8 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db/prisma"; 
-import BlogEditor from "@/components/admin/blogs/BlogEditor";
+import { prisma } from "@/lib/db/prisma";
+import BlogEditor from "@/components/admin/blogs/BlogEditor"; // [cite: 10]
+import { Metadata } from "next";
 
 interface EditBlogPageProps {
   params: Promise<{
@@ -9,10 +10,27 @@ interface EditBlogPageProps {
   }>;
 }
 
-export default async function EditBlogPage({ params }: EditBlogPageProps) {
-  // 1. ✅ Await the params to fix the crash
+// Added SEO Metadata for Admin Interface
+export async function generateMetadata({ params }: EditBlogPageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const id = parseInt(resolvedParams.id);
+  
+  if (isNaN(id)) return { title: "Invalid Blog ID" };
+
+  const post = await prisma.blogPost.findUnique({
+    where: { id },
+    select: { title: true }
+  });
+
+  return {
+    title: post ? `Edit: ${post.title}` : "Blog Not Found",
+  };
+}
+
+export default async function EditBlogPage({ params }: EditBlogPageProps) {
+  // 1. ✅ Await the params
+  const resolvedParams = await params;
+  const id = parseInt(resolvedParams.id); // [cite: 12]
   
   if (isNaN(id)) {
     return notFound();
@@ -24,7 +42,7 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
     include: {
       category: true,
     }
-  });
+  }); // [cite: 13]
 
   if (!post) {
     return notFound();
@@ -32,6 +50,6 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
 
   // 3. Load Editor
   return (
-    <BlogEditor post={post} />
+    <BlogEditor post={post} /> // [cite: 14]
   );
 }

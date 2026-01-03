@@ -1,32 +1,33 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
-import { Metadata } from "next";
+import { Metadata } from "next"; // [cite: 1]
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// SEO Metadata Generation
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const page = await prisma.page.findUnique({ where: { slug } });
+  const page = await prisma.page.findUnique({ where: { slug } }); // [cite: 3]
   if (!page) return {};
-
+  
   return {
     title: page.metaTitle || page.title,
     description: page.metaDescription,
-  };
+  }; // [cite: 4]
 }
 
 export default async function DynamicPage({ params }: Props) {
   const { slug } = await params;
+  
   const page = await prisma.page.findUnique({ 
     where: { slug } 
-  });
+  }); // [cite: 6]
 
-  // 404 if not found OR if draft (and we are assuming public view)
-  // (You could add logic here to allow admins to see drafts via cookies/headers)
+  // 404 if not found OR if draft
   if (!page || !page.isPublished) {
-    return notFound();
+    return notFound(); // [cite: 7]
   }
 
   return (
@@ -41,5 +42,5 @@ export default async function DynamicPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: page.content }}
       />
     </main>
-  );
+  ); // [cite: 8]
 }

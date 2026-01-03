@@ -11,6 +11,7 @@ export default function TrashPage() {
   // Load Trash
   const fetchTrash = () => {
     setLoading(true);
+    // [cite: 55]
     fetch("/api/admin/blogs?status=trash")
       .then(r => r.json())
       .then(d => {
@@ -29,8 +30,8 @@ export default function TrashPage() {
   };
 
   const handlePermanentDelete = async (id: number) => {
+    // [cite: 58]
     if (!confirm("⚠️ WARNING: This will permanently delete the post and its SEO data.\n\nThis action cannot be undone.")) return;
-    
     const res = await fetch(`/api/admin/blogs/${id}?hard=true`, { method: "DELETE" });
     if (res.ok) fetchTrash();
     else alert("Failed to delete. You might not have permission.");
@@ -91,14 +92,14 @@ export default function TrashPage() {
                            onClick={() => handleRestore(post.id)}
                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-lg flex items-center gap-1 transition-colors"
                          >
-                           <RotateCcw size={14} /> Restore
+                            <RotateCcw size={14} /> Restore
                          </button>
                          <button 
                            onClick={() => handlePermanentDelete(post.id)}
                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-700 dark:text-red-400 text-xs font-bold rounded-lg flex items-center gap-1 transition-colors"
                          >
                            <AlertTriangle size={14} /> Delete Forever
-                         </button>
+                        </button>
                        </div>
                     </td>
                   </tr>

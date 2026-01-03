@@ -7,6 +7,8 @@ import RoleGuard from "@/components/admin/auth/RoleGuard";
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Create State
   const [newName, setNewName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   
@@ -14,7 +16,7 @@ export default function CategoriesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
 
-  // ✅ Selection State
+  // Selection State
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   async function load() {
@@ -27,13 +29,18 @@ export default function CategoriesPage() {
 
   useEffect(() => { load(); }, []);
 
-  // ... (handleAdd and handleUpdate remain the same as before) ...
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
     setSubmitting(true);
+    
     const slug = newName.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-    await fetch("/api/admin/blogs/categories", { method: "POST", body: JSON.stringify({ name: newName, slug }) });
+    
+    await fetch("/api/admin/blogs/categories", { 
+        method: "POST", 
+        body: JSON.stringify({ name: newName, slug }) 
+    });
+    
     setNewName("");
     load();
     setSubmitting(false);
@@ -42,12 +49,16 @@ export default function CategoriesPage() {
   async function handleUpdate(id: number) {
     if(!editName.trim()) return;
     const slug = editName.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-    await fetch(`/api/admin/blogs/categories`, { method: "PUT", body: JSON.stringify({ id, name: editName, slug }) });
+    
+    await fetch(`/api/admin/blogs/categories`, { 
+        method: "PUT", 
+        body: JSON.stringify({ id, name: editName, slug }) 
+    });
+    
     setEditingId(null);
     load();
   }
 
-  // ✅ UPDATED: Handle Bulk Delete
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
     if (!confirm(`Delete ${selectedIds.length} categories? Posts will be uncategorized.`)) return;
@@ -57,10 +68,11 @@ export default function CategoriesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: selectedIds }) 
     });
+    
     load();
   }
 
-  // ✅ Selection Helpers
+  // Selection Helpers
   const toggleSelect = (id: number) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
@@ -81,7 +93,7 @@ export default function CategoriesPage() {
             <p className="text-sm text-secondary">Organize content sections.</p>
           </div>
           
-          {/* ✅ Bulk Actions */}
+          {/* Bulk Actions */}
           {selectedIds.length > 0 && (
             <button 
               onClick={handleBulkDelete}
@@ -110,7 +122,7 @@ export default function CategoriesPage() {
                 />
               </div>
               <button disabled={submitting} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm transition-colors disabled:opacity-50">
-                  {submitting ? "Saving..." : "Add Category"}
+                   {submitting ? "Saving..." : "Add Category"}
               </button>
             </form>
           </div>
@@ -118,10 +130,9 @@ export default function CategoriesPage() {
           {/* List */}
           <div className="md:col-span-2 theme-bg theme-border border rounded-xl overflow-hidden">
             <table className="w-full text-left">
-               <thead>
+              <thead>
                 <tr className="bg-slate-50/50 dark:bg-white/5 text-xs font-black text-secondary uppercase tracking-widest border-b theme-border">
                   <th className="p-4 w-10">
-                    {/* Select All Checkbox */}
                     <button onClick={toggleSelectAll} className="text-secondary hover:text-primary">
                       {selectedIds.length === categories.length && categories.length > 0 ? <CheckSquare size={18} /> : <Square size={18} />}
                     </button>
@@ -134,11 +145,11 @@ export default function CategoriesPage() {
               </thead>
               <tbody>
                 {categories.map((c) => (
-                  <tr key={c.id} className={`hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group ${selectedIds.includes(c.id) ? "bg-blue-50 dark:bg-blue-500/10" : ""}`}>
+                   <tr key={c.id} className={`hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group ${selectedIds.includes(c.id) ? "bg-blue-50 dark:bg-blue-500/10" : ""}`}>
                     <td className="p-4">
                       <button onClick={() => toggleSelect(c.id)} className={`text-secondary hover:text-primary ${selectedIds.includes(c.id) ? "text-blue-600" : ""}`}>
                         {selectedIds.includes(c.id) ? <CheckSquare size={18} /> : <Square size={18} />}
-                      </button>
+                     </button>
                     </td>
                     <td className="p-4 font-bold text-primary">
                       {editingId === c.id ? (
@@ -149,7 +160,7 @@ export default function CategoriesPage() {
                           onChange={e => setEditName(e.target.value)} 
                         />
                       ) : c.name}
-                    </td>
+                     </td>
                     <td className="p-4 font-mono text-xs text-secondary opacity-70">
                       {editingId === c.id ? "..." : c.slug}
                     </td>
@@ -164,14 +175,13 @@ export default function CategoriesPage() {
                          </>
                       ) : (
                          <button onClick={() => { setEditingId(c.id); setEditName(c.name); }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 size={16}/></button>
-                      )}
+                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
         </div>
       </div>
     </RoleGuard>

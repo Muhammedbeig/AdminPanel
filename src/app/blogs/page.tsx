@@ -7,14 +7,15 @@ import RoleGuard from "@/components/admin/auth/RoleGuard";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 
 export default function AllBlogsPage() {
-  const { user } = useAdminAuth(); // To check if user is ADMIN
+  const { user } = useAdminAuth();
+  
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"all" | "published" | "draft" | "trash">("all");
 
   const loadPosts = () => {
     setLoading(true);
-    // Fetch all posts including trashed ones
+    // Fetch all posts including trashed ones [cite: 82]
     fetch("/api/admin/blogs?includeTrash=true")
       .then(res => res.json())
       .then(data => {
@@ -25,9 +26,9 @@ export default function AllBlogsPage() {
 
   useEffect(() => { loadPosts(); }, []);
 
-  // Filter Logic
-  const isTrashed = (p: any) => !!p.deletedAt; 
-
+  // Filter Logic [cite: 84]
+  const isTrashed = (p: any) => !!p.deletedAt;
+  
   const filteredPosts = posts.filter(post => {
     const trashed = isTrashed(post);
     if (view === "trash") return trashed;
@@ -52,6 +53,7 @@ export default function AllBlogsPage() {
 
   const handleHardDelete = async (id: number) => {
     if(!confirm("⚠️ PERMANENTLY DELETE? This cannot be undone!")) return;
+    // [cite: 88]
     const res = await fetch(`/api/admin/blogs/${id}?hard=true`, { method: "DELETE" });
     if (!res.ok) alert("Only Super Admins can permanently delete.");
     loadPosts();

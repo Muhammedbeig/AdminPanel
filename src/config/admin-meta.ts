@@ -13,7 +13,7 @@ export const ADMIN_TITLES = {
     categories: "Blog Categories",
   },
 
-  // --- KNOWLEDGE BASE (FAQs) ---
+  // --- KNOWLEDGE BASE (FAQs) ------
   faqs: {
     list: "FAQ Manager",
     new: "Add New FAQ",

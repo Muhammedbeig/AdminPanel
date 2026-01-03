@@ -3,22 +3,31 @@
 import React, { useEffect, useState } from "react";
 import { Tags, Search, Plus, Edit3, Trash2, X, FileText, CheckSquare, Square } from "lucide-react";
 
+interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  _count: { posts: number };
+}
+
 export default function TagsPage() {
-  const [tags, setTags] = useState<any[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTag, setEditingTag] = useState<any>(null);
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [formData, setFormData] = useState({ name: "", slug: "", description: "" });
   const [saving, setSaving] = useState(false);
 
-  // ✅ Selection State
+  // Selection State
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const fetchTags = () => {
     setLoading(true);
+    // [cite: 7]
     fetch(`/api/admin/blogs/tags?q=${search}`)
       .then(res => res.json())
       .then(data => {
@@ -36,6 +45,7 @@ export default function TagsPage() {
     setSaving(true);
     
     const method = editingTag ? "PUT" : "POST";
+    // [cite: 10]
     const body = editingTag ? { ...formData, id: editingTag.id } : formData;
 
     const res = await fetch("/api/admin/blogs/tags", {
@@ -55,9 +65,9 @@ export default function TagsPage() {
     }
   };
 
-  // ✅ Bulk Delete
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
+    // [cite: 14]
     if (!confirm(`Are you sure you want to delete ${selectedIds.length} tags?`)) return;
 
     await fetch("/api/admin/blogs/tags", {
@@ -77,7 +87,7 @@ export default function TagsPage() {
     else setSelectedIds(tags.map(t => t.id));
   };
 
-  const handleOpenModal = (tag?: any) => {
+  const handleOpenModal = (tag?: Tag) => {
     if (tag) {
       setEditingTag(tag);
       setFormData({ name: tag.name, slug: tag.slug, description: tag.description || "" });
@@ -90,7 +100,6 @@ export default function TagsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in pb-20">
-      
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -239,7 +248,7 @@ export default function TagsPage() {
                 onClick={() => setIsModalOpen(false)}
                 className="px-4 py-2 text-sm font-bold text-secondary hover:text-primary transition-colors"
               >
-                Cancel
+                 Cancel
               </button>
               <button 
                 onClick={handleSave}

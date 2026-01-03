@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { Edit, ArrowLeft, Calendar } from "lucide-react";
+import { Metadata } from "next";
 
 interface BlogDetailsPageProps {
   params: Promise<{
@@ -10,9 +11,34 @@ interface BlogDetailsPageProps {
   }>;
 }
 
+export async function generateMetadata({ params }: BlogDetailsPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const id = parseInt(resolvedParams.id);
+  
+  if (isNaN(id)) return {};
+
+  const post = await prisma.blogPost.findUnique({
+    where: { id },
+    select: { title: true, content: true }
+  });
+
+  if (!post) return {};
+
+  // Fix: Clean HTML tags safely for the description
+  const cleanDescription = post.content
+    .replace(/<[^>]+>/g, "") // Removes HTML tags
+    .substring(0, 160);
+
+  return {
+    title: post.title,
+    description: cleanDescription,
+  };
+}
+
 export default async function BlogDetailsPage({ params }: BlogDetailsPageProps) {
   const resolvedParams = await params;
   const id = parseInt(resolvedParams.id);
+
   if (isNaN(id)) return notFound();
 
   const post = await prisma.blogPost.findUnique({
@@ -65,6 +91,7 @@ export default async function BlogDetailsPage({ params }: BlogDetailsPageProps) 
                   {post.category.name}
                 </span>
               )}
+             
               <div className="flex items-center gap-1">
                 <Calendar size={14} />
                 {new Date(post.createdAt).toLocaleDateString()}
@@ -76,12 +103,12 @@ export default async function BlogDetailsPage({ params }: BlogDetailsPageProps) 
               </div>
            </div>
 
-           {/* Title: Uses text-primary */}
+           {/* Title */}
            <h1 className="text-3xl md:text-5xl font-black text-primary leading-tight">
              {post.title}
            </h1>
 
-           {/* Body: Uses prose with custom theme colors */}
+           {/* Body */}
            <div 
              className="prose dark:prose-invert max-w-none prose-lg text-secondary leading-relaxed"
              dangerouslySetInnerHTML={{ __html: post.content }}
