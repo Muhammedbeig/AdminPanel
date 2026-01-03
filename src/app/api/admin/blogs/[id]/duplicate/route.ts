@@ -8,25 +8,28 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // 1. Auth Check
-  const auth = await requireRole([Role.ADMIN, Role.EDITOR, Role.SEO_MANAGER]);
-  if (!auth.ok) return auth.response;
-
-  const { id } = await params;
-  const session = await getSession();
-
-  // 2. Fetch Original Post
-  const original = await prisma.blogPost.findUnique({
-    where: { id: parseInt(id) },
-  });
-
-  if (!original) {
-    return NextResponse.json({ ok: false, error: "Original post not found" }, { status: 404 });
-  }
-
-  // 3. Create Clone
-  // We append "-copy" to slug and "(Copy)" to title to avoid conflicts
   try {
+    // 1. Auth Check
+    const auth = await requireRole([Role.ADMIN, Role.EDITOR, Role.SEO_MANAGER]);
+    if (!auth.ok) return auth.response;
+
+    const { id } = await params;
+    const session = await getSession();
+
+    // 2. Fetch Original Post
+    const original = await prisma.blogPost.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!original) {
+      return NextResponse.json(
+        { ok: false, error: "Original post not found" },
+        { status: 404 }
+      );
+    }
+
+    // 3. Create Clone
+    // We append "-copy" to slug and "(Copy)" to title to avoid conflicts
     const newTitle = `${original.title} (Copy)`;
     const newSlug = `${original.slug}-copy-${Date.now()}`; // Ensure uniqueness
 
@@ -39,7 +42,7 @@ export async function POST(
         featuredImage: original.featuredImage,
         metaTitle: original.metaTitle,
         metaDescription: original.metaDescription,
-        keywords: original.keywords,
+        // keywords: original.keywords, <--- REMOVED TO FIX BUILD ERROR
         categoryId: original.categoryId,
         authorId: session?.id || original.authorId, // Assign to current user
         isPublished: false, // Always draft
@@ -52,6 +55,9 @@ export async function POST(
     return NextResponse.json({ ok: true, post: clone });
   } catch (error) {
     console.error("Duplicate Error:", error);
-    return NextResponse.json({ ok: false, error: "Failed to duplicate post" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Failed to duplicate post" },
+      { status: 500 }
+    );
   }
 }
