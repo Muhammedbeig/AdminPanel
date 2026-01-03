@@ -25,9 +25,9 @@ import {
   FileJson,       
   Link2Off,       
   Bot,            
-  // LogOut removed
-  // ✅ NEW ICON FOR UNUSED MEDIA
-  ImageMinus 
+  ImageMinus,
+  // ✅ Added for "Add New Page"
+  Plus
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
@@ -117,7 +117,6 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
   const main: NavItem[] = [
     { href: "/", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
     { href: "/media", label: "Media Library", icon: <ImageIcon size={16} /> },
-    // ✅ ADDED UNUSED MEDIA
     { href: "/media/unused", label: "Unused Media", icon: <ImageMinus size={16} /> },
   ];
 
@@ -146,10 +145,14 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
     { href: "/seo/robots", label: "Robots.txt", icon: <Bot size={16} /> },
   ];
 
+  // ✅ UPDATED: Restored Old Pages + Added New Manager Links
   const pages: NavItem[] = [
     { href: "/seo/pages/terms", label: "Terms of Service", icon: <FileText size={16} /> },
     { href: "/seo/pages/privacy", label: "Privacy Policy", icon: <FileText size={16} /> },
     { href: "/seo/pages/contact", label: "Contact", icon: <FileText size={16} /> },
+    // New Page Manager
+    { href: "/pages", label: "All Custom Pages", icon: <Layers size={16} /> },
+    { href: "/pages/new", label: "Add New Page", icon: <Plus size={16} /> },
   ];
 
   const admin: NavItem[] = [
@@ -181,7 +184,6 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
         <Section title="Admin" items={admin} allowedRoles={["ADMIN", "DEVELOPER"]} />
 
       </nav>
-      {/* Logout button removed as requested */}
     </aside>
   );
 }

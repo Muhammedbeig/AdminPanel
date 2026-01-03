@@ -7,7 +7,9 @@ import {
   PenTool, FileText, Command, Globe, Shield, User,
   Sun, Moon, Settings, LogOut, ArrowRight,
   HelpCircle, Tag, Sliders, Monitor, PlusCircle,
-  Link2Off, ArrowRightLeft, FileJson, Bot
+  Link2Off, ArrowRightLeft, FileJson, Bot,
+  // ✅ NEW IMPORTS for added features
+  Calendar, Trash2, ImageMinus, Layers, Tags, Plus
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
@@ -28,6 +30,7 @@ export default function HeaderCommandSearch() {
     // --- MAIN ---
     { category: "Main", label: "Dashboard", icon: LayoutDashboard, action: () => router.push("/") },
     { category: "Main", label: "Media Library", icon: ImageIcon, action: () => router.push("/media") },
+    { category: "Main", label: "Unused Media", icon: ImageMinus, action: () => router.push("/media/unused") },
 
     // --- KNOWLEDGE BASE (FAQs) ---
     { category: "Knowledge Base", label: "Manage FAQs", icon: HelpCircle, action: () => router.push("/faqs") },
@@ -38,8 +41,11 @@ export default function HeaderCommandSearch() {
     { category: "Blog", label: "All Posts", icon: PenTool, action: () => router.push("/blogs") },
     { category: "Blog", label: "Write New Post", icon: FileText, action: () => router.push("/blogs/new") },
     { category: "Blog", label: "Categories", icon: Command, action: () => router.push("/blogs/categories") },
+    { category: "Blog", label: "Tags", icon: Tags, action: () => router.push("/blogs/tags") },
+    { category: "Blog", label: "Scheduled Posts", icon: Calendar, action: () => router.push("/blogs/scheduled") },
+    { category: "Blog", label: "Trash", icon: Trash2, action: () => router.push("/blogs/trash") },
 
-    // --- SEO MANAGER (Updated) ---
+    // --- SEO MANAGER ---
     { category: "SEO", label: "Global SEO", icon: Globe, action: () => router.push("/seo/global") },
     { category: "SEO", label: "League SEO", icon: Shield, action: () => router.push("/seo/league") },
     { category: "SEO", label: "Player SEO", icon: User, action: () => router.push("/seo/player") },
@@ -53,7 +59,9 @@ export default function HeaderCommandSearch() {
     { category: "Settings", label: "Web Settings", icon: Monitor, action: () => router.push("/settings/web") },
     { category: "Settings", label: "Profile Settings", icon: Settings, action: () => router.push("/profile") },
     
-    // --- CONTENT PAGES (Static) ---
+    // --- PAGES (Static & Dynamic) ---
+    { category: "Pages", label: "All Custom Pages", icon: Layers, action: () => router.push("/pages") },
+    { category: "Pages", label: "Create New Page", icon: Plus, action: () => router.push("/pages/new") },
     { category: "Pages", label: "Edit Privacy Policy", icon: FileText, action: () => router.push("/seo/pages/privacy") },
     { category: "Pages", label: "Edit Terms of Service", icon: FileText, action: () => router.push("/seo/pages/terms") },
     { category: "Pages", label: "Edit Contact Page", icon: FileText, action: () => router.push("/seo/pages/contact") },
