@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db/prisma";
 import DashboardClient from "@/components/admin/dashboard/DashboardClient";
 
+// ✅ Add Title
+export const metadata = {
+  title: "Dashboard",
+};
+
 // Force dynamic so counts update on every refresh
 export const dynamic = "force-dynamic";
 

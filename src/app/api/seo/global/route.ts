@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireRole } from "@/lib/auth/guard";
 import { Role } from "@prisma/client";
+import { revalidatePath } from "next/cache"; // ✅ Import for Cache Clearing
 import SEO_STORE_GLOBAL_TEMPLATE from "@/livesoccerr/templates/seo-store.global";
 
 export const runtime = "nodejs";
@@ -38,16 +39,19 @@ export async function PUT(req: Request) {
     return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
 
-  const data = body?.data;
-  if (!data) {
-    return NextResponse.json({ ok: false, error: "Missing `data`" }, { status: 400 });
+  try {
+    const updated = await prisma.seoGlobal.upsert({
+      where: { key: KEY },
+      create: { key: KEY, data: body },
+      update: { data: body },
+    });
+
+    // ✅ CRITICAL: Force the Root Layout to refresh its title immediately
+    revalidatePath("/", "layout");
+
+    return NextResponse.json({ ok: true, data: updated.data });
+  } catch (error) {
+    console.error("SEO Global Update Error:", error);
+    return NextResponse.json({ ok: false, error: "Failed to save settings" }, { status: 500 });
   }
-
-  const saved = await prisma.seoGlobal.upsert({
-    where: { key: KEY },
-    create: { key: KEY, data },
-    update: { data },
-  });
-
-  return NextResponse.json({ ok: true, data: saved.data }, { status: 200 });
 }

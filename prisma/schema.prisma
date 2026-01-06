@@ -138,7 +138,7 @@ model SystemSetting {
   favicon           String?
   
   // Panel Identity
-  siteName          String?  @default("Admin Panel") // This controls the "Panel Title"
+  siteName          String?  @default("Admin Panel") 
   supportEmail      String?
   contactNumber     String?
   address           String?  @db.Text
