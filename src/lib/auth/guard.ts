@@ -2,11 +2,24 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { Role } from "@prisma/client";
 
-export type AuthResult = 
-  | { ok: true; session: NonNullable<Awaited<ReturnType<typeof getSession>>> } 
-  | { ok: false; response: NextResponse };
+// ✅ 1. Define specific types needed by require.ts
+export type GuardOk = { 
+  ok: true; 
+  session: NonNullable<Awaited<ReturnType<typeof getSession>>> 
+};
 
-export async function requireRole(allowedRoles: Role[]): Promise<AuthResult> {
+export type GuardFail = { 
+  ok: false; 
+  response: NextResponse 
+};
+
+// ✅ 2. Export the Union type
+export type GuardResult = GuardOk | GuardFail;
+
+// ✅ 3. Alias AuthResult for backward compatibility
+export type AuthResult = GuardResult;
+
+export async function requireRole(allowedRoles: Role[]): Promise<GuardResult> {
   const session = await getSession();
 
   // 1. Check Login
