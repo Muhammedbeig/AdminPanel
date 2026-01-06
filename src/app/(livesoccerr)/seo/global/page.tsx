@@ -1,8 +1,13 @@
 import { Suspense } from "react";
+import { Metadata } from "next";
 import GlobalSeoClient from "./GlobalSeoClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "Global SEO",
+};
 
 function Loading() {
   return (
