@@ -4,30 +4,10 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Globe,
-  Trophy,
-  User,
-  Users,
-  Shield,
-  Settings,
-  FileText,
-  PenTool, 
-  Layers,
-  Image as ImageIcon,
-  HelpCircle,
-  Tag,
-  // ✅ NEW ICONS IMPORTED
-  Tags,           
-  Calendar,       
-  Trash2,         
-  ArrowRightLeft, 
-  FileJson,       
-  Link2Off,       
-  Bot,            
-  ImageMinus,
-  // ✅ Added for "Add New Page"
-  Plus
+  LayoutDashboard, Globe, Trophy, User, Users, Shield, Settings,
+  FileText, PenTool, Layers, Image as ImageIcon, HelpCircle, Tag,
+  Tags, Calendar, Trash2, ArrowRightLeft, FileJson, Link2Off, Bot,
+  ImageMinus, Plus
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
@@ -37,7 +17,7 @@ type NavItem = {
   label: string;
   icon: React.ReactNode;
   badge?: string;
-  roles?: string[];
+  roles?: string[]; // If present, only these roles see this specific item
 };
 
 function normalizePath(p: string) {
@@ -69,12 +49,19 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
 
   const canSee = (allowedRoles?: string[]) => {
     if (!allowedRoles) return true;
-    if (role === "ADMIN" || role === "DEVELOPER") return true;
+    // Note: We removed the generic "ADMIN || DEVELOPER" bypass here 
+    // to strictly enforce the "Developer only sees settings" rule.
+    if (role === "ADMIN") return true; 
     return allowedRoles.includes(role);
   };
 
   const Section = ({ title, items, allowedRoles }: { title: string; items: NavItem[], allowedRoles?: string[] }) => {
     if (!canSee(allowedRoles)) return null;
+
+    // Filter items inside the section
+    const visibleItems = items.filter(item => !item.roles || canSee(item.roles));
+
+    if (visibleItems.length === 0) return null;
 
     return (
       <div>
@@ -82,8 +69,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
           {title}
         </div>
         <div className="space-y-1">
-          {items.map((item) => {
-            if (item.roles && !canSee(item.roles)) return null;
+          {visibleItems.map((item) => {
             const active = isActive(item.href);
             return (
               <Link
@@ -122,7 +108,13 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
 
   const blogManager: NavItem[] = [
     { href: "/blogs", label: "All Posts", icon: <PenTool size={16} /> },
-    { href: "/blogs/new", label: "Write New", icon: <FileText size={16} />},
+    
+    // ✅ RULE: SEO Manager & Editor CANNOT create. Developer cannot access.
+    { 
+      href: "/blogs/new", label: "Write New", icon: <FileText size={16} />,
+      roles: ["ADMIN", "CONTENT_WRITER"] 
+    },
+    
     { href: "/blogs/categories", label: "Categories", icon: <Layers size={16} /> },
     { href: "/blogs/tags", label: "Tags", icon: <Tags size={16} /> },
     { href: "/blogs/scheduled", label: "Scheduled", icon: <Calendar size={16} /> },
@@ -131,6 +123,13 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
 
   const knowledgeBase: NavItem[] = [
     { href: "/faqs", label: "Manage FAQs", icon: <HelpCircle size={16} /> },
+    
+    // ✅ RULE: SEO Manager & Editor CANNOT create.
+    { 
+      href: "/faqs/new", label: "Add New FAQ", icon: <FileText size={16} />,
+      roles: ["ADMIN"] 
+    },
+    
     { href: "/faqs/categories", label: "FAQ Categories", icon: <Tag size={16} /> },
   ];
 
@@ -145,14 +144,17 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
     { href: "/seo/robots", label: "Robots.txt", icon: <Bot size={16} /> },
   ];
 
-  // ✅ UPDATED: Restored Old Pages + Added New Manager Links
   const pages: NavItem[] = [
     { href: "/seo/pages/terms", label: "Terms of Service", icon: <FileText size={16} /> },
     { href: "/seo/pages/privacy", label: "Privacy Policy", icon: <FileText size={16} /> },
     { href: "/seo/pages/contact", label: "Contact", icon: <FileText size={16} /> },
-    // New Page Manager
     { href: "/pages", label: "All Custom Pages", icon: <Layers size={16} /> },
-    { href: "/pages/new", label: "Add New Page", icon: <Plus size={16} /> },
+    
+    // ✅ RULE: SEO Manager & Editor CANNOT create.
+    { 
+      href: "/pages/new", label: "Add New Page", icon: <Plus size={16} />,
+      roles: ["ADMIN"] 
+    },
   ];
 
   const admin: NavItem[] = [
@@ -176,11 +178,15 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
         "dark:[scrollbar-color:rgba(255,255,255,0.1)_transparent]"
       ].join(" ")}>
         
-        <Section title="Main" items={main} />
-        <Section title="Blog Manager" items={blogManager} allowedRoles={["CONTENT_WRITER", "EDITOR", "SEO_MANAGER", "ADMIN", "DEVELOPER"]} />
-        <Section title="Knowledge Base" items={knowledgeBase} allowedRoles={["CONTENT_WRITER", "EDITOR", "ADMIN", "DEVELOPER"]} />
-        <Section title="SEO Manager" items={seoManager} allowedRoles={["SEO_MANAGER", "EDITOR", "ADMIN", "DEVELOPER"]} />
-        <Section title="Content Pages" items={pages} allowedRoles={["SEO_MANAGER", "EDITOR", "CONTENT_WRITER", "ADMIN", "DEVELOPER"]} />
+        {/* ✅ RULE: Developer sees ONLY settings. */}
+        
+        <Section title="Main" items={main} allowedRoles={["ADMIN", "EDITOR", "SEO_MANAGER", "CONTENT_WRITER"]} />
+        <Section title="Blog Manager" items={blogManager} allowedRoles={["ADMIN", "EDITOR", "SEO_MANAGER", "CONTENT_WRITER"]} />
+        <Section title="Knowledge Base" items={knowledgeBase} allowedRoles={["ADMIN", "EDITOR", "SEO_MANAGER", "CONTENT_WRITER"]} />
+        <Section title="SEO Manager" items={seoManager} allowedRoles={["ADMIN", "EDITOR", "SEO_MANAGER"]} />
+        <Section title="Content Pages" items={pages} allowedRoles={["ADMIN", "EDITOR", "SEO_MANAGER", "CONTENT_WRITER"]} />
+        
+        {/* Settings: Visible to Admin and Developer */}
         <Section title="Admin" items={admin} allowedRoles={["ADMIN", "DEVELOPER"]} />
 
       </nav>

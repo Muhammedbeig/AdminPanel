@@ -1,133 +1,110 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireRole } from "@/lib/auth/guard";
-import { Role } from "@prisma/client";
+import { permissions } from "@/lib/auth/permissions";
+import { Role } from "@prisma/client"; // Or from your local enum if you prefer, but Prisma is fine here on server
 
-const ALLOWED = [Role.ADMIN, Role.EDITOR, Role.SEO_MANAGER, Role.CONTENT_WRITER];
+// Allow all staff to attempt access; permissions.ts handles the strict logic
+const ALLOWED = [Role.ADMIN, Role.EDITOR, Role.SEO_MANAGER, Role.CONTENT_WRITER, Role.DEVELOPER];
 
-// ✅ Slugify Helper (Strict)
 const slugify = (text: string) => 
-  text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')        // Replace spaces with -
-    .replace(/[^\w\-]+/g, '')    // Remove all non-word chars
-    .replace(/\-\-+/g, '-');     // Replace multiple - with single -
+  text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
 
-// 1. GET Single Post
-export async function GET(
-  req: Request, 
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(ALLOWED);
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
-
   const post = await prisma.blogPost.findUnique({
     where: { id: parseInt(id) },
-    include: { 
-      category: true,
-      tags: true // ✅ Fetch tags for editor
-    },
+    include: { category: true, tags: true },
   });
-
   if (!post) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
-  
   return NextResponse.json({ ok: true, post });
 }
 
-// 2. PUT (Update) Post
-export async function PUT(
-  req: Request, 
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(ALLOWED);
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
   const body = await req.json();
+  const user = (auth as any).session;
 
   try {
-    // ✅ Logic: Respect provided date, or auto-set if publishing without date
-    let publishedAt = undefined;
-    if (body.publishedAt !== undefined) {
-       publishedAt = body.publishedAt ? new Date(body.publishedAt) : null;
-    } else if (body.isPublished === true) {
-       // If toggling publish to TRUE without sending a date, use NOW (optional logic)
+    const existingPost = await prisma.blogPost.findUnique({ where: { id: parseInt(id) } });
+    if (!existingPost) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    if (!permissions.canEditPost(user, existingPost)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    let finalIsPublished = body.isPublished;
+    if (finalIsPublished === true && existingPost.isPublished === false) {
+       if (!permissions.canPublishPost(user)) {
+         return NextResponse.json({ error: "Forbidden: Cannot publish" }, { status: 403 });
+       }
+    }
+
+    let publishedAt = undefined;
+    if (body.publishedAt !== undefined) publishedAt = body.publishedAt ? new Date(body.publishedAt) : null;
+    else if (finalIsPublished === true && !existingPost.publishedAt) publishedAt = new Date();
 
     const updated = await prisma.blogPost.update({
       where: { id: parseInt(id) },
       data: {
         title: body.title,
-        
-        // ✅ Enforce strict slug (only update if provided)
         slug: body.slug ? slugify(body.slug) : undefined,
-        
         excerpt: body.excerpt,
         content: body.content,
         featuredImage: body.featuredImage,
         categoryId: body.categoryId ? parseInt(body.categoryId) : null,
-        
-        // SEO (Keywords removed)
         metaTitle: body.metaTitle,
         metaDescription: body.metaDescription,
-        
-        isPublished: body.isPublished,
-        // ✅ Only update if field is sent (undefined check)
+        isPublished: finalIsPublished,
         ...(publishedAt !== undefined ? { publishedAt } : {}),
-        
         isFeatured: body.isFeatured,
-
-        // ✅ Update Tags (Set replaces old list with new list)
-        tags: {
-          set: body.tags?.map((id: number) => ({ id })) || []
-        }
+        tags: { set: body.tags?.map((tagId: number) => ({ id: tagId })) || [] }
       },
     });
 
     return NextResponse.json({ ok: true, post: updated });
   } catch (e) {
-    console.error("Update Error:", e);
     return NextResponse.json({ ok: false, error: "Update failed" }, { status: 500 });
   }
 }
 
-// 3. DELETE (Soft or Hard)
-export async function DELETE(
-  req: Request, 
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole(ALLOWED);
+  if (!auth.ok) return auth.response;
+
   const { id } = await params;
+  const user = (auth as any).session;
   const { searchParams } = new URL(req.url);
   const isHardDelete = searchParams.get("hard") === "true";
 
-  if (isHardDelete) {
-    // 🛑 HARD DELETE: Only ADMIN can do this
-    const auth = await requireRole([Role.ADMIN]);
-    if (!auth.ok) return NextResponse.json({ error: "Only Admins can permanently delete." }, { status: 403 });
+  try {
+    const post = await prisma.blogPost.findUnique({ where: { id: parseInt(id) }});
+    if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    try {
+    if (isHardDelete) {
+      if (!permissions.canPermanentlyDelete(user)) {
+        return NextResponse.json({ error: "Forbidden: Only Admins can permanently delete" }, { status: 403 });
+      }
       await prisma.blogPost.delete({ where: { id: parseInt(id) } });
       return NextResponse.json({ ok: true, message: "Permanently deleted" });
-    } catch (e) {
-      return NextResponse.json({ ok: false, error: "Delete failed" }, { status: 500 });
-    }
-  } else {
-    // ♻️ SOFT DELETE (Trash): Admins & Editors
-    const auth = await requireRole([Role.ADMIN, Role.EDITOR]);
-    if (!auth.ok) return auth.response;
-
-    try {
+    } else {
+      // ♻️ Soft Delete
+      if (!permissions.canDeletePost(user, post)) {
+        return NextResponse.json({ error: "Forbidden: You cannot trash this post" }, { status: 403 });
+      }
       await prisma.blogPost.update({
         where: { id: parseInt(id) },
-        data: { deletedAt: new Date() } // Mark as trashed
+        data: { deletedAt: new Date() }
       });
       return NextResponse.json({ ok: true, message: "Moved to trash" });
-    } catch (e) {
-      return NextResponse.json({ ok: false, error: "Soft delete failed" }, { status: 500 });
     }
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: "Delete failed" }, { status: 500 });
   }
 }

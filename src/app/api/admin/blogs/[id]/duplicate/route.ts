@@ -2,36 +2,26 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireRole } from "@/lib/auth/guard";
 import { Role } from "@prisma/client";
-import { getSession } from "@/lib/auth/session";
+
+// Allow Developer access (cloning is harmless, just creates a draft)
+const ALLOWED = [Role.ADMIN, Role.EDITOR, Role.SEO_MANAGER, Role.CONTENT_WRITER, Role.DEVELOPER];
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 1. Auth Check
-    const auth = await requireRole([Role.ADMIN, Role.EDITOR, Role.SEO_MANAGER]);
+    const auth = await requireRole(ALLOWED);
     if (!auth.ok) return auth.response;
 
     const { id } = await params;
-    const session = await getSession();
+    const user = (auth as any).session;
 
-    // 2. Fetch Original Post
-    const original = await prisma.blogPost.findUnique({
-      where: { id: parseInt(id) },
-    });
+    const original = await prisma.blogPost.findUnique({ where: { id: parseInt(id) } });
+    if (!original) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
 
-    if (!original) {
-      return NextResponse.json(
-        { ok: false, error: "Original post not found" },
-        { status: 404 }
-      );
-    }
-
-    // 3. Create Clone
-    // We append "-copy" to slug and "(Copy)" to title to avoid conflicts
     const newTitle = `${original.title} (Copy)`;
-    const newSlug = `${original.slug}-copy-${Date.now()}`; // Ensure uniqueness
+    const newSlug = `${original.slug}-copy-${Date.now()}`; 
 
     const clone = await prisma.blogPost.create({
       data: {
@@ -42,10 +32,9 @@ export async function POST(
         featuredImage: original.featuredImage,
         metaTitle: original.metaTitle,
         metaDescription: original.metaDescription,
-        // keywords: original.keywords, <--- REMOVED TO FIX BUILD ERROR
         categoryId: original.categoryId,
-        authorId: session?.id || original.authorId, // Assign to current user
-        isPublished: false, // Always draft
+        authorId: user.id, // ✅ Assign to whoever clicked the button
+        isPublished: false, 
         isFeatured: false,
         publishedAt: null,
         deletedAt: null,
@@ -54,10 +43,6 @@ export async function POST(
 
     return NextResponse.json({ ok: true, post: clone });
   } catch (error) {
-    console.error("Duplicate Error:", error);
-    return NextResponse.json(
-      { ok: false, error: "Failed to duplicate post" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: "Failed to duplicate" }, { status: 500 });
   }
 }

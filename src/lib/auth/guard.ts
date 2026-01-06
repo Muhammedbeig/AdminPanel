@@ -1,47 +1,32 @@
 import { NextResponse } from "next/server";
-import type { Role } from "@prisma/client";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSession } from "@/lib/auth/session";
+import { Role } from "@prisma/client";
 
-export type GuardOk = {
-  ok: true;
-  status: 200;
-  user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>;
-};
+export type AuthResult = 
+  | { ok: true; session: NonNullable<Awaited<ReturnType<typeof getSession>>> } 
+  | { ok: false; response: NextResponse };
 
-export type GuardFail = {
-  ok: false;
-  status: number;
+export async function requireRole(allowedRoles: Role[]): Promise<AuthResult> {
+  const session = await getSession();
 
-  // Keep these 3 to satisfy all your old call-sites
-  error: string;
-  message: string;
-  reason: string;
+  // 1. Check Login
+  if (!session) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
 
-  // For call-sites that do: `return g.response`
-  response: NextResponse;
-};
+  // 2. Super Admin Bypass (Checks Email)
+  const isSuperAdmin = process.env.SUPER_ADMIN_EMAIL && session.email === process.env.SUPER_ADMIN_EMAIL;
 
-export type GuardResult = GuardOk | GuardFail;
+  // 3. Role Check (Skipped if Super Admin)
+  if (!isSuperAdmin && !allowedRoles.includes(session.role)) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
 
-function fail(status: number, msg: string): GuardFail {
-  const response = NextResponse.json({ ok: false, error: msg }, { status });
-  return {
-    ok: false,
-    status,
-    error: msg,
-    message: msg,
-    reason: msg,
-    response,
-  };
-}
-
-/**
- * ✅ This is the export your routes are importing:
- * import { requireRole } from "@/lib/auth/guard";
- */
-export async function requireRole(roles: Role[]): Promise<GuardResult> {
-  const user = await getSessionUser();
-  if (!user) return fail(401, "Unauthorized");
-  if (!roles.includes(user.role)) return fail(403, "Forbidden");
-  return { ok: true, status: 200, user };
+  return { ok: true, session };
 }
