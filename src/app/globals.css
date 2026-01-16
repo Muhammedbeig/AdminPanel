@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* ===============================
+   THEME VARIABLES (ADMIN APP)
+   =============================== */
+
+:root {
+  /* LIGHT MODE */
+  --background: 255 255 255;
+  --foreground: 30 41 59;
+
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #475569;
+
+  --widget-border: #e2e8f0;
+  --widget-hover: #f1f5f9;
+  --skeleton: #e2e8f0;
+}
+
+.dark {
+  /* DARK MODE */
+  --background: 2 6 23;       /* slate-950-ish */
+  --foreground: 241 245 249;  /* slate-50 */
+
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #cbd5e1;
+
+  --widget-border: rgba(255, 255, 255, 0.12);
+  --widget-hover: rgba(255, 255, 255, 0.06);
+  --skeleton: rgba(255, 255, 255, 0.10);
+}
+
+/* ===============================
+   BASE STYLES
+   =============================== */
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ===============================
+   ADMIN THEME UTILITIES
+   (used by your components)
+   =============================== */
+
+.theme-bg {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+}
+
+.theme-border {
+  border-color: var(--widget-border);
+}
+
+.theme-hover {
+  transition: background-color 0.2s ease;
+}
+.theme-hover:hover {
+  background-color: var(--widget-hover);
+}
+
+.bg-skeleton {
+  background-color: var(--skeleton);
+}
+
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}

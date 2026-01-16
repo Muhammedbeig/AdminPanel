@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  SEO_MANAGER
+  CONTENT_WRITER
+  DEVELOPER
+}
+
+// ✅ UPDATED: User model now supports Author Profiles for Blogs
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(EDITOR)
+
+  // New Author Fields
+  name         String?
+  image        String?  // Profile picture URL
+  bio          String?  @db.Text
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relation to Blog Posts
+  posts        BlogPost[]
+}
+
+// --- EXISTING SEO MODELS ---
+
+model SeoGlobal {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model SeoMatch {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model SeoLeague {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model SeoPlayer {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model SeoPage {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+
+model BlogCategory {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  slug      String     @unique
+  posts     BlogPost[]
+}
+
+model BlogTag {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique // Case-insensitive enforced in API
+  slug        String     @unique
+  description String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relation to Posts
+  posts       BlogPost[]
+}
+
+model BlogPost {
+  id            Int      @id @default(autoincrement())
+  
+  // Core Content
+  title         String
+  slug          String   @unique
+  excerpt       String?  @db.Text
+  content       String   @db.LongText // Rich HTML content
+  featuredImage String?
+
+  isFeatured      Boolean   @default(false)
+  deletedAt       DateTime?  // Used for "Soft Delete" / Trash bin
+  
+  // Organization
+  categoryId    Int?
+  category      BlogCategory? @relation(fields: [categoryId], references: [id])
+  
+  // SEO Fields (Matches your guidelines)
+  metaTitle       String?
+  metaDescription String? @db.Text
+  tags        BlogTag[]
+  
+  // Advanced SEO Overrides
+  ogTitle       String?
+  ogDescription String?
+  ogImage       String?
+  
+  // Status
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  
+  // Author Linking
+  authorId      Int
+  author        User      @relation(fields: [authorId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model SystemSetting {
+  id                Int      @id @default(1)
+  
+  // Branding
+  logo              String?
+  favicon           String?
+  
+  // Panel Identity
+  siteName          String?  @default("Admin Panel") 
+  supportEmail      String?
+  contactNumber     String?
+  address           String?  @db.Text
+  
+  // Config
+  defaultLanguage   String   @default("en")
+  timezone          String   @default("UTC")
+  maintenanceMode   Boolean  @default(false)
+  googleAnalyticsId String?
+  envVariables      Json?     @default("[]")
+  updatedAt         DateTime @updatedAt
+}
+// --- ✅ NEW: WEB SETTINGS MODEL ---
+model WebSetting {
+  id                Int      @id @default(1)
+
+  // Visuals
+  themeColor        String   @default("#0f80da")
+  headerLogo        String?
+  footerLogo        String?
+  placeholderImage  String?
+
+  // Content
+  footerDescription String?  @db.Text
+  googleMapUrl      String?  @db.Text
+  
+  // Config
+  showLandingPage   Boolean  @default(true)
+  latitude          String?
+  longitude         String?
+
+  // Social Media
+  socialInstagram   String?
+  socialX           String?
+  socialFacebook    String?
+  socialLinkedin    String?
+  socialPinterest   String?
+
+  updatedAt         DateTime @updatedAt
+}
+
+model Media {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  folderId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  folder    MediaFolder? @relation(fields: [folderId], references: [id])
+
+  @@index([folderId])
+}
+
+model MediaFolder {
+  id        Int      @id @default(autoincrement())
+  name      String
+  parentId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent    MediaFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  MediaFolder[] @relation("FolderHierarchy")
+  files     Media[]
+}
+
+model FAQCategory {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  faqs      FAQ[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FAQ {
+  id          Int          @id @default(autoincrement())
+  question    String
+  slug        String       @unique
+  answer      String       @db.Text
+  isPublished Boolean      @default(true)
+  order       Int          @default(0)
+  categoryId  Int?
+  category    FAQCategory? @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model SitemapLink {
+  id        Int      @id @default(autoincrement())
+  path      String   @unique // e.g. "/landing-page"
+  priority  Float    @default(0.5) // 0.0 to 1.0
+  frequency String   @default("weekly") // "daily", "weekly", "monthly"
+  updatedAt DateTime @updatedAt
+}
+
+model SitemapSettings {
+  id              Int     @id @default(autoincrement())
+  homePriority    Float   @default(1.0)
+  postPriority    Float   @default(0.9)
+  pagePriority    Float   @default(0.8) // For Categories & Static pages
+  updatedAt       DateTime @updatedAt
+}
+
+model BrokenLink {
+  id          Int      @id @default(autoincrement())
+  linkUrl     String   // The external or internal link that is broken
+  sourceSlug  String   // The slug of the blog post where this link was found
+  sourceTitle String   // Title of the blog post
+  statusCode  Int      // e.g., 404, 500
+  checkedAt   DateTime @default(now())
+}
+
+model Redirect {
+  id          Int      @id @default(autoincrement())
+  source      String   @unique // e.g., "/old-page"
+  destination String   // e.g., "/new-page"
+  type        Int      @default(301) // 301, 302, 307, 308, 410, 451
+  isActive    Boolean  @default(true)
+  hits        Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+model RobotsTxt {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text // Stores the full raw text (e.g., "User-agent: *...")
+  updatedAt DateTime @updatedAt
+}
+
+// Add this model to your schema
+model Page {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  
+  // SEO Fields
+  metaTitle       String?
+  metaDescription String? @db.Text
+  
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
